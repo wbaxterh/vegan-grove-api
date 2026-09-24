@@ -1,0 +1,65 @@
+{
+  "name": "vegan-grove-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vegan Grove API: a privacy-first vegan community and activism platform for Southern California.",
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "validate": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "seed:places:osm": "tsx scripts/seed-places-osm.ts",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,js,json}": "biome check --write",
+    "*": "secretlint"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
+    "@aws-sdk/client-s3": "^3.1140.0",
+    "@aws-sdk/s3-request-presigner": "^3.1140.0",
+    "apple-signin-auth": "^2.1.0",
+    "argon2": "^0.45.1",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.3",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "google-auth-library": "^11.1.0",
+    "helmet": "^8.3.0",
+    "mongoose": "^9.10.2",
+    "nodemailer": "^10.0.10",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "socket.io": "^4.8.3",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.14",
+    "@secretlint/secretlint-rule-preset-recommend": "^13.0.5",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.13.6",
+    "@types/nodemailer": "^8.0.2",
+    "@types/supertest": "^7.2.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.1",
+    "mongodb-memory-server": "^11.3.0",
+    "secretlint": "^13.0.5",
+    "socket.io-client": "^4.8.3",
+    "supertest": "^7.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

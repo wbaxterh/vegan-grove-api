@@ -1,4 +1,8 @@
 version: 2
+# Patch and minor bumps arrive grouped once a week. Major versions are left to
+# deliberate upgrades: Next majors track what Amplify supports, Expo packages
+# track the SDK, and TypeScript majors change the compiler. Security alerts
+# still appear in the Security tab regardless of these ignores.
 updates:
   - package-ecosystem: npm
     directory: /
@@ -8,9 +12,16 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
-    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 3
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
       day: monday
+    groups:
+      actions:
+        patterns: ["*"]
+    open-pull-requests-limit: 1

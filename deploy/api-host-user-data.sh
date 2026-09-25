@@ -36,6 +36,23 @@ mkdir -p /srv/vegan-grove
 chown vg:vg /srv/vegan-grove
 sudo -u vg git clone https://github.com/wbaxterh/vegan-grove-api.git /srv/vegan-grove/api
 
+# Parameter Store renderer used by deploy.sh.
+cat > /srv/vegan-grove/render-env.py <<'EOS'
+#!/usr/bin/env python3
+"""Render /vegan-grove/api/* from SSM Parameter Store into KEY=VALUE lines."""
+import json, subprocess, sys
+out = subprocess.run(["aws", "ssm", "get-parameters-by-path", "--region", "us-east-1", "--path", "/vegan-grove/api",
+                      "--with-decryption", "--output", "json"], check=True, capture_output=True, text=True).stdout
+params = json.loads(out)["Parameters"]
+for p in sorted(params, key=lambda p: p["Name"]):
+    name = p["Name"].rsplit("/", 1)[-1]
+    value = p["Value"].replace("
+", "\n")
+    print(f"{name}={value}")
+EOS
+chmod 750 /srv/vegan-grove/render-env.py
+chown vg:vg /srv/vegan-grove/render-env.py
+
 # Deploy script: pull main, build, render .env from Parameter Store, reload PM2.
 cat > /srv/vegan-grove/deploy.sh <<'EOS'
 #!/bin/bash

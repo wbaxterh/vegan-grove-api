@@ -56,17 +56,20 @@ chown vg:vg /srv/vegan-grove/render-env.py
 # Deploy script: pull main, build, render .env from Parameter Store, reload PM2.
 cat > /srv/vegan-grove/deploy.sh <<'EOS'
 #!/bin/bash
+# Vegan Grove API deploy, run as the vg user through SSM Run Command:
+#   sudo -u vg /srv/vegan-grove/deploy.sh
 set -euo pipefail
 cd /srv/vegan-grove/api
 git fetch --quiet origin main
 git reset --quiet --hard origin/main
 npm ci --no-audit --no-fund
 npm run build
-aws ssm get-parameters-by-path --region us-east-1 --path /vegan-grove/api --with-decryption --output json \
-  | python3 -c 'import sys,json; ps=json.load(sys.stdin)["Parameters"]; print("\n".join(f"{p[\"Name\"].rsplit(\"/\",1)[-1]}={p[\"Value\"]}" for p in ps))' \
-  > /srv/vegan-grove/api/.env
+python3 /srv/vegan-grove/render-env.py > /srv/vegan-grove/api/.env
 chmod 600 /srv/vegan-grove/api/.env
-grep -q '^MONGODB_URI=' /srv/vegan-grove/api/.env || { echo 'MONGODB_URI not in Parameter Store yet: built, not started'; exit 0; }
+if ! grep -q '^MONGODB_URI=' /srv/vegan-grove/api/.env; then
+  echo 'MONGODB_URI not in Parameter Store yet: built, not started'
+  exit 0
+fi
 pm2 startOrReload ecosystem.config.cjs --update-env
 pm2 save
 EOS

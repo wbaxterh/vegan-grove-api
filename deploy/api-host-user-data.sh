@@ -7,6 +7,15 @@ export DEBIAN_FRONTEND=noninteractive
 
 apt-get update
 apt-get upgrade -y
+
+# 2 GB swap: npm ci gets OOM-killed on 1 GB without it.
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+echo 'vm.swappiness=10' > /etc/sysctl.d/90-swap.conf
+sysctl -q -p /etc/sysctl.d/90-swap.conf
 apt-get install -y nginx certbot python3-certbot-nginx git unzip unattended-upgrades fail2ban ca-certificates curl
 
 # Node 24 from NodeSource, PM2 global.
@@ -40,6 +49,7 @@ aws ssm get-parameters-by-path --region us-east-1 --path /vegan-grove/api --with
   | python3 -c 'import sys,json; ps=json.load(sys.stdin)["Parameters"]; print("\n".join(f"{p[\"Name\"].rsplit(\"/\",1)[-1]}={p[\"Value\"]}" for p in ps))' \
   > /srv/vegan-grove/api/.env
 chmod 600 /srv/vegan-grove/api/.env
+grep -q '^MONGODB_URI=' /srv/vegan-grove/api/.env || { echo 'MONGODB_URI not in Parameter Store yet: built, not started'; exit 0; }
 pm2 startOrReload ecosystem.config.cjs --update-env
 pm2 save
 EOS

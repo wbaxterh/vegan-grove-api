@@ -3,14 +3,17 @@
  * watch providers, then POST them back to `/api/ingest/media` under their
  * original source and sourceId (so a film never gets a second row).
  *
- *   npm run ingest:media:tmdb -- --dry-run            # fetch, map, print counts, no uploads
- *   npm run ingest:media:tmdb                         # POST with INGEST_KEY to API_URL
- *   npm run ingest:media:tmdb -- --input items.json   # a different input file
+ *   npm run ingest:media:tmdb -- --dry-run                 # fetch, map, print counts, no uploads
+ *   npm run ingest:media:tmdb                              # POST with INGEST_KEY to API_URL
+ *   npm run ingest:media:tmdb -- --input media-seed.json   # enrich the curated seed directly
  *
- * Input: scripts/data/generated/media-wikidata.json, written by
- * `ingest:media:wikidata`, shaped `{ source, items }`; only items with
- * `externalIds.tmdb` are touched. Needs `TMDB_API_KEY`. Posters are
- * downloaded from TMDB and uploaded to `S3_MEDIA_BUCKET` under
+ * Input, by default scripts/data/generated/media-wikidata.json as written by
+ * `ingest:media:wikidata`: `{ batches: [{ source, items }] }` (the curated
+ * seed and the Wikidata discoveries). A `{ source, items }` file or a bare
+ * seed array (`scripts/data/media-seed.json`, source `curated`) is accepted
+ * too. Only items with `externalIds.tmdb` are touched. Needs `TMDB_API_KEY`.
+ *
+ * Posters are downloaded from TMDB and uploaded to `S3_MEDIA_BUCKET` under
  * `media/posters/<tmdbId>.jpg` with the AWS SDK (credentials from the usual
  * chain); the API only ever receives the key, never a remote image URL. When
  * the bucket is not configured the poster step is skipped and logged.
@@ -35,13 +38,19 @@ import {
   type ScriptContext,
   scriptContext,
 } from './lib/client.js';
+import {
+  CURATED_SOURCE,
+  type MediaCache,
+  type SeedEntry,
+  seedToMediaItems,
+} from './media-wikidata.js';
 
 export const JUSTWATCH_ATTRIBUTION = 'Watch providers data by JustWatch';
 const TMDB_API = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE = 'https://image.tmdb.org/t/p/w500';
 const PACE_MS = 250;
 
-interface InputFile {
+interface Batch {
   source: string;
   items: MediaItemInput[];
 }
@@ -52,6 +61,10 @@ interface TmdbMovie {
   release_date?: string;
 }
 
+interface Provider {
+  provider_name?: string;
+}
+
 interface TmdbProviders {
   results?: Record<
     string,
@@ -59,8 +72,19 @@ interface TmdbProviders {
   >;
 }
 
-interface Provider {
-  provider_name?: string;
+/** Accept the cache, a single-source file, or the bare seed array. Exported for the tests. */
+export function readBatches(data: unknown): Batch[] {
+  if (Array.isArray(data)) {
+    return [{ source: CURATED_SOURCE, items: seedToMediaItems(data as SeedEntry[]) }];
+  }
+  if (data && typeof data === 'object') {
+    const obj = data as Partial<MediaCache> & Partial<Batch>;
+    if (Array.isArray(obj.batches)) return obj.batches;
+    if (typeof obj.source === 'string' && Array.isArray(obj.items)) {
+      return [{ source: obj.source, items: obj.items }];
+    }
+  }
+  throw new Error('input must be { batches }, { source, items } or a seed array');
 }
 
 async function tmdbGet<T>(pathname: string, key: string): Promise<T> {
@@ -150,28 +174,47 @@ async function enrich(
   };
 }
 
+async function enrichBatch(
+  ctx: ScriptContext,
+  s3: S3Client | null,
+  apiKey: string,
+  batch: Batch,
+): Promise<MediaItemInput[]> {
+  const enriched: MediaItemInput[] = [];
+  for (const item of batch.items) {
+    if (!item.externalIds?.tmdb) continue;
+    try {
+      enriched.push(await enrich(ctx, s3, apiKey, item));
+    } catch (err) {
+      ctx.logger.warn({ source: batch.source, sourceId: item.sourceId, err }, 'skipped');
+    }
+    await new Promise((r) => setTimeout(r, PACE_MS));
+  }
+  return enriched;
+}
+
 async function main(): Promise<void> {
   const ctx = scriptContext();
   const apiKey = ctx.env.TMDB_API_KEY;
   if (!apiKey) throw new Error('TMDB_API_KEY is not set');
   const file = dataPath(argValue(ctx.args, 'input') ?? 'generated/media-wikidata.json');
-  const input = readJson<InputFile>(file);
-  const candidates = input.items.filter((i) => i.externalIds?.tmdb);
-  ctx.logger.info({ file, source: input.source, candidates: candidates.length }, 'tmdb enrichment');
+  const batches = readBatches(readJson<unknown>(file));
+  const candidates = batches.reduce(
+    (n, b) => n + b.items.filter((i) => i.externalIds?.tmdb).length,
+    0,
+  );
+  ctx.logger.info({ file, batches: batches.length, candidates }, 'tmdb enrichment');
   const s3 = ctx.env.S3_MEDIA_BUCKET ? new S3Client({ region: ctx.env.AWS_REGION }) : null;
 
-  const enriched: MediaItemInput[] = [];
-  for (const item of candidates) {
-    try {
-      enriched.push(await enrich(ctx, s3, apiKey, item));
-    } catch (err) {
-      ctx.logger.warn({ sourceId: item.sourceId, err }, 'enrichment failed; item skipped');
-    }
-    await new Promise((r) => setTimeout(r, PACE_MS));
-  }
   const totals = emptyTotals();
-  addTotals(totals, await postIngest(ctx, 'media', input.source, enriched));
-  ctx.logger.info({ ...totals, posters: enriched.filter((i) => i.posterKey).length }, 'done');
+  let posters = 0;
+  for (const batch of batches) {
+    const enriched = await enrichBatch(ctx, s3, apiKey, batch);
+    if (enriched.length === 0) continue;
+    posters += enriched.filter((i) => i.posterKey).length;
+    addTotals(totals, await postIngest(ctx, 'media', batch.source, enriched));
+  }
+  ctx.logger.info({ ...totals, posters }, 'done');
 }
 
 if (isMain(import.meta.url)) runScript(main);

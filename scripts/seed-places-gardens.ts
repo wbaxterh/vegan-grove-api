@@ -14,16 +14,17 @@
  */
 
 import type { PlaceItem } from '../src/services/ingest.js';
-import { type OverpassElement, runImporter, SOCAL_BBOX, toPlaceItem } from './lib/osm.js';
+import { type OverpassElement, runImporter, toPlaceItem } from './lib/osm.js';
 
-const OVERPASS_QUERY = [
-  '[out:json][timeout:120];',
-  '(',
-  `nwr["leisure"="garden"]["garden:type"="community"]["name"](${SOCAL_BBOX});`,
-  `nwr["landuse"="allotments"]["name"](${SOCAL_BBOX});`,
-  ');',
-  'out center tags;',
-].join('');
+const query = (bbox: string) =>
+  [
+    '[out:json][timeout:120];',
+    '(',
+    `nwr["leisure"="garden"]["garden:type"="community"]["name"](${bbox});`,
+    `nwr["landuse"="allotments"]["name"](${bbox});`,
+    ');',
+    'out center tags;',
+  ].join('');
 
 export function mapGarden(el: OverpassElement): PlaceItem | null {
   const tags = el.tags ?? {};
@@ -32,7 +33,7 @@ export function mapGarden(el: OverpassElement): PlaceItem | null {
   return item ? { ...item, chain: false } : null;
 }
 
-runImporter({ name: 'community gardens', query: OVERPASS_QUERY, map: mapGarden }).catch((err) => {
+runImporter({ name: 'community gardens', query, map: mapGarden }).catch((err) => {
   process.stderr.write(`seed failed: ${err instanceof Error ? err.stack : String(err)}\n`);
   process.exit(1);
 });

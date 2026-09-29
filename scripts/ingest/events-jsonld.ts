@@ -25,7 +25,7 @@
  * are never mapped, and past or cancelled events are dropped.
  */
 import type { EventItem } from '../../src/services/ingest.js';
-import type { EventSource } from './events-ics.js';
+import { type EventSource, isPlaceholder } from './events-ics.js';
 import {
   argValue,
   dataPath,
@@ -152,29 +152,35 @@ function absoluteUrl(value: unknown, base: string): string | undefined {
   }
 }
 
+/** Start and end for a node that is neither cancelled nor long past; null otherwise. */
+function eventWindow(node: JsonObject, now: Date): { startsAt: string; endsAt?: string } | null {
+  const status = typeof node.eventStatus === 'string' ? node.eventStatus : '';
+  if (/Cancelled/i.test(status)) return null;
+  const startsAt = normalizeDateString(node.startDate);
+  if (!startsAt) return null;
+  const endsAt = normalizeDateString(node.endDate) ?? undefined;
+  if (endsAt && endsAt < startsAt) return null;
+  if (new Date(endsAt ?? startsAt).getTime() < now.getTime() - PAST_GRACE_MS) return null;
+  return { startsAt, endsAt };
+}
+
 function nodeToItem(
   node: JsonObject,
   pageUrl: string,
   src: EventSource,
   now: Date,
 ): EventItem | null {
-  const status = typeof node.eventStatus === 'string' ? node.eventStatus : '';
-  if (/Cancelled/i.test(status)) return null;
+  const window = eventWindow(node, now);
   const title = cleanText(typeof node.name === 'string' ? node.name : '', 140);
-  const startsAt = normalizeDateString(node.startDate);
-  if (!title || !startsAt) return null;
-  const endsAt = normalizeDateString(node.endDate) ?? undefined;
-  if (endsAt && endsAt < startsAt) return null;
-  if (new Date(endsAt ?? startsAt).getTime() < now.getTime() - PAST_GRACE_MS) return null;
+  if (!window || !title) return null;
   const description = cleanText(typeof node.description === 'string' ? node.description : '', 4000);
   const url = absoluteUrl(node.url, pageUrl);
   const id = typeof node['@id'] === 'string' && node['@id'].trim() ? node['@id'] : undefined;
   return {
-    sourceId: stableId(id ?? url ?? `${title}|${startsAt}`),
+    sourceId: stableId(id ?? url ?? `${title}|${window.startsAt}`),
     title,
     type: eventTypeFromText(`${title} ${description}`),
-    startsAt,
-    endsAt,
+    ...window,
     ...placeOf(node),
     hostName: src.hostName,
     description: description || undefined,
@@ -267,7 +273,7 @@ async function crawlSource(ctx: ScriptContext, src: EventSource): Promise<EventI
 async function main(): Promise<void> {
   const ctx = scriptContext();
   const file = dataPath(argValue(ctx.args, 'input') ?? 'event-sources.json');
-  const sources = readJson<EventSource[]>(file).filter((s) => s.url && !s.placeholder);
+  const sources = readJson<EventSource[]>(file).filter((s) => s.url && !isPlaceholder(s));
   ctx.logger.info({ file, pages: sources.length }, 'json-ld sources');
 
   for (const src of sources) {

@@ -49,8 +49,15 @@ export interface EventSource {
   ics?: string;
   url?: string;
   placeholder?: string;
+  /** Free text from whoever checked the source; informational. */
+  verified?: string;
   /** Regex (as a string) for same-origin detail links on the list page that carry the Event JSON-LD. */
   detailLinkPattern?: string;
+}
+
+/** Entries kept for tracking but not fetched: a `placeholder` note, or a verified note that says so. */
+export function isPlaceholder(src: EventSource): boolean {
+  return Boolean(src.placeholder) || /placeholder/i.test(src.verified ?? '');
 }
 
 function icalTimeToIso(time: ICAL.Time): string | null {
@@ -162,7 +169,7 @@ export function icsToEventItems(
 async function main(): Promise<void> {
   const ctx = scriptContext();
   const file = dataPath(argValue(ctx.args, 'input') ?? 'event-sources.json');
-  const sources = readJson<EventSource[]>(file).filter((s) => s.ics && !s.placeholder);
+  const sources = readJson<EventSource[]>(file).filter((s) => s.ics && !isPlaceholder(s));
   ctx.logger.info({ file, feeds: sources.length }, 'ics sources');
 
   for (const src of sources) {

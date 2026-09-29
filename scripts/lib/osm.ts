@@ -1,8 +1,14 @@
 /**
- * Shared OpenStreetMap plumbing for the place importers: the Overpass fetch,
- * the tag-to-field mapping, and the run loop that hands mapped items to the
- * ingest service in batches. Both `seed-places-osm.ts` and
+ * Shared OpenStreetMap plumbing for the place importers: the tiled Overpass
+ * fetch, the tag-to-field mapping, and the run loop that hands mapped items
+ * to the ingest service in batches. Both `seed-places-osm.ts` and
  * `seed-places-gardens.ts` are thin wrappers over this file.
+ *
+ * Overpass mirrors time out on the whole Southern California box, so the
+ * query runs per 0.25 degree tile with retries and a backoff, falling back
+ * from `OVERPASS_URL` to overpass-api.de (honouring its Retry-After on 429).
+ * Elements that straddle a tile edge come back twice and are de-duplicated
+ * by OSM id.
  */
 import { config as loadDotenv } from 'dotenv';
 import { loadEnv } from '../../src/config/env.js';
@@ -17,7 +23,13 @@ import { type IngestResult, ingestItems, type PlaceItem } from '../../src/servic
 export const SOCAL_BBOX = '32.5,-119.5,34.9,-116.0';
 export const OSM_USER_AGENT = 'vegan-grove-seed/0.2 (+https://vegangrove.org)';
 export const OSM_SOURCE = 'osm';
+export const OVERPASS_FALLBACK_URL = 'https://overpass-api.de/api/interpreter';
 const BATCH_SIZE = 200;
+const TILE_DEGREES = 0.25;
+const MAX_ATTEMPTS = 3;
+const BACKOFF_MS = [2_000, 6_000, 15_000];
+const RATE_LIMIT_WAIT_MS = 30_000;
+const TILE_PACE_MS = 500;
 
 export interface OverpassElement {
   type: 'node' | 'way' | 'relation';
@@ -28,13 +40,103 @@ export interface OverpassElement {
   tags?: Record<string, string>;
 }
 
-export async function fetchOverpass(url: string, query: string): Promise<OverpassElement[]> {
+/** An Overpass QL query for one `s,w,n,e` box. */
+export type QueryBuilder = (bbox: string) => string;
+
+/** Split an `s,w,n,e` box into tiles of at most `size` degrees a side. */
+export function tileBbox(bbox: string, size: number = TILE_DEGREES): string[] {
+  const [s, w, n, e] = bbox.split(',').map(Number) as [number, number, number, number];
+  const tiles: string[] = [];
+  const round = (v: number) => Number(v.toFixed(4));
+  for (let lat = s; lat < n; lat = round(lat + size)) {
+    for (let lng = w; lng < e; lng = round(lng + size)) {
+      const top = Math.min(round(lat + size), n);
+      const right = Math.min(round(lng + size), e);
+      tiles.push(`${lat},${lng},${top},${right}`);
+    }
+  }
+  return tiles;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+class OverpassError extends Error {
+  constructor(
+    readonly status: number,
+    readonly retryAfterMs: number | null,
+  ) {
+    super(`Overpass HTTP ${status}`);
+  }
+}
+
+async function overpassOnce(url: string, query: string): Promise<OverpassElement[]> {
   const res = await fetch(`${url}?data=${encodeURIComponent(query)}`, {
     headers: { 'User-Agent': OSM_USER_AGENT, Accept: 'application/json' },
+    signal: AbortSignal.timeout(180_000),
   });
-  if (!res.ok) throw new Error(`Overpass ${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    const retryAfter = Number(res.headers.get('retry-after'));
+    throw new OverpassError(res.status, Number.isFinite(retryAfter) ? retryAfter * 1000 : null);
+  }
   const body = (await res.json()) as { elements?: OverpassElement[] };
   return body.elements ?? [];
+}
+
+/** Retry one mirror with backoff; 429 waits for Retry-After (or 30 s) instead. */
+async function withRetries(url: string, query: string, logger: Logger): Promise<OverpassElement[]> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    try {
+      return await overpassOnce(url, query);
+    } catch (err) {
+      lastError = err;
+      const status = err instanceof OverpassError ? err.status : 0;
+      const wait =
+        status === 429
+          ? ((err as OverpassError).retryAfterMs ?? RATE_LIMIT_WAIT_MS)
+          : (BACKOFF_MS[attempt] ?? BACKOFF_MS[BACKOFF_MS.length - 1]);
+      logger.warn(
+        { url, status: status || 'network', attempt: attempt + 1, wait },
+        'overpass retry',
+      );
+      await sleep(wait ?? RATE_LIMIT_WAIT_MS);
+    }
+  }
+  throw lastError;
+}
+
+async function fetchTile(
+  primaryUrl: string,
+  query: string,
+  logger: Logger,
+): Promise<OverpassElement[]> {
+  try {
+    return await withRetries(primaryUrl, query, logger);
+  } catch (err) {
+    if (primaryUrl === OVERPASS_FALLBACK_URL) throw err;
+    logger.warn({ err }, 'primary mirror failed for tile, trying overpass-api.de');
+    return withRetries(OVERPASS_FALLBACK_URL, query, logger);
+  }
+}
+
+/** Run `build(tile)` for every tile of the SoCal box and merge the results by OSM id. */
+export async function fetchOverpassTiled(
+  primaryUrl: string,
+  build: QueryBuilder,
+  logger: Logger,
+  bbox: string = SOCAL_BBOX,
+): Promise<OverpassElement[]> {
+  const tiles = tileBbox(bbox);
+  const seen = new Map<string, OverpassElement>();
+  for (const [i, tile] of tiles.entries()) {
+    const elements = await fetchTile(primaryUrl, build(tile), logger);
+    for (const el of elements) seen.set(osmSourceId(el), el);
+    if ((i + 1) % 20 === 0 || i + 1 === tiles.length) {
+      logger.info({ tiles: `${i + 1}/${tiles.length}`, elements: seen.size }, 'overpass progress');
+    }
+    if (i + 1 < tiles.length) await sleep(TILE_PACE_MS);
+  }
+  return Array.from(seen.values());
 }
 
 export const osmSourceId = (el: OverpassElement) => `${el.type}/${el.id}`;
@@ -145,7 +247,8 @@ export function summarize(items: PlaceItem[]) {
 
 export interface ImporterRun {
   name: string;
-  query: string;
+  /** Builds the Overpass QL for one tile; the run covers the SoCal box tile by tile. */
+  query: QueryBuilder;
   map: (el: OverpassElement) => PlaceItem | null;
 }
 
@@ -165,8 +268,8 @@ export async function runImporter(run: ImporterRun): Promise<void> {
   );
   const logger = createLogger({ NODE_ENV: env.NODE_ENV, LOG_LEVEL: 'info' });
 
-  logger.info({ url: env.OVERPASS_URL, run: run.name }, 'fetching from Overpass');
-  const elements = await fetchOverpass(env.OVERPASS_URL, run.query);
+  logger.info({ url: env.OVERPASS_URL, run: run.name }, 'fetching from Overpass, tiled');
+  const elements = await fetchOverpassTiled(env.OVERPASS_URL, run.query, logger);
   const items = elements.map(run.map).filter((p): p is PlaceItem => p !== null);
   logger.info(
     { fetched: elements.length, skipped: elements.length - items.length, ...summarize(items) },

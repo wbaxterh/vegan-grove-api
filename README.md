@@ -68,14 +68,16 @@ npm run validate        # biome check, tsc --noEmit, vitest run, tsc build
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run validate` | lint, typecheck, test, build: the CI contract and the PR gate |
 | `npm run seed:places:osm` | Overpass importer for `diet:vegan` places in the SoCal bbox; `-- --dry-run` prints counts only, a real run upserts by `(source, sourceId)` through the ingest service as `pending` (`-- --approve` lands approved) and never resets a moderated row or an admin-edited field. Skips fast food unless fully vegan, flags chains, maps hours, phone, website, postcode, cuisine and access tags |
-| `npm run seed:places:gardens` | Same pipeline for OSM community gardens (`leisure=garden` + `garden:type=community`) and named allotments, as type `garden`, fully vegan |
+| `npm run seed:places:gardens` | Same pipeline for OSM community gardens (`leisure=garden` + `garden:type=community`) and named allotments, as type `garden`, fully vegan. Both OSM seeds query Overpass per 0.25 degree tile with retries and fall back to overpass-api.de |
 | `npm run seed:sanctuaries` | Curated sanctuaries from `scripts/data/sanctuaries.json`, approved on insert |
 | `npm run seed:groves` | The ten regional Groves, one per home area, idempotent by slug |
+| `npm run seed:gardens:curated` | Curated community gardens from `scripts/data/gardens-curated.json` (same shape as the sanctuaries file plus `type`) as approved rows |
 | `npm run make-admin -- <email>` | Flip an existing member's role to admin |
 | `npm run ingest:events:ics` | ICS calendar feeds from `scripts/data/event-sources.json`, POSTed to `/api/ingest/events` |
-| `npm run ingest:events:jsonld` | schema.org `Event` JSON-LD from the allowlisted pages in the same file |
+| `npm run ingest:events:jsonld` | schema.org `Event` JSON-LD from the allowlisted pages in the same file; a `detailLinkPattern` per source crawls the matching detail pages (at most 50, one per second) for sites that only mark up the detail page |
 | `npm run ingest:organizations` | Curated `scripts/data/organizations.json` to `/api/ingest/organizations` |
-| `npm run ingest:media:wikidata` | One SPARQL query for films about veganism and animals to `/api/ingest/media`; caches the result for the TMDB step |
+| `npm run ingest:media:wikidata` | Curated seed (`scripts/data/media-seed.json`, ids completed from Wikidata) plus one SPARQL discovery query, both to `/api/ingest/media`; caches both batches for the TMDB step |
+| `npm run ingest:media:seed` | The curated seed alone, no discovery |
 | `npm run ingest:media:tmdb` | Synopsis, poster (to S3) and JustWatch-attributed watch providers for items with a TMDB id; needs `TMDB_API_KEY` |
 | `npm run ingest:guides` | Guide drafts from `scripts/data/guides.json` to `/api/ingest/guides`, landing as `draft` |
 | `npm run ingest:places:osm`, `ingest:places:gardens`, `ingest:sanctuaries` | Aliases for the three seed scripts, using the names from the ingest contract |

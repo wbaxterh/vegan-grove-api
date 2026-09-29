@@ -9,7 +9,8 @@
  *
  * Seed: scripts/data/media-seed.json, entries `{ title, year?, kind?,
  * wikidata?, tmdb?, imdb? }`, ingested as-is under source `curated` with
- * the title (and year) as `sourceId`; entries with a Q-id get their missing
+ * the Q-id (else the title slug) as `sourceId`, the same convention as
+ * `ingest:media:seed`; entries with a Q-id get their missing
  * IMDb and TMDB ids looked up on Wikidata. Wikidata's main-subject (P921)
  * coverage of this topic is thin (a dozen titles), so the seed is the
  * primary path and discovery fills in what the seed does not name.
@@ -165,24 +166,29 @@ const slugish = (text: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+function seedExternalIds(e: SeedEntry): Record<string, string> | undefined {
+  const ids: Record<string, string> = {};
+  if (e.wikidata && /^Q\d+$/.test(e.wikidata)) ids.wikidata = e.wikidata;
+  if (e.tmdb !== undefined && TMDB_RE.test(String(e.tmdb))) ids.tmdb = String(e.tmdb);
+  if (e.imdb && IMDB_RE.test(e.imdb)) ids.imdb = e.imdb;
+  return Object.keys(ids).length > 0 ? ids : undefined;
+}
+
 /** Seed entries as curated media items, ids as given. Exported for the tests. */
 export function seedToMediaItems(entries: SeedEntry[]): MediaItemInput[] {
   return entries
     .filter((e) => typeof e.title === 'string' && e.title.trim())
     .map((e) => {
-      const externalIds: Record<string, string> = {};
-      if (e.wikidata && /^Q\d+$/.test(e.wikidata)) externalIds.wikidata = e.wikidata;
-      if (e.tmdb !== undefined && TMDB_RE.test(String(e.tmdb))) externalIds.tmdb = String(e.tmdb);
-      if (e.imdb && IMDB_RE.test(e.imdb)) externalIds.imdb = e.imdb;
+      const externalIds = seedExternalIds(e);
       const title = e.title.trim().slice(0, 160);
       return {
-        sourceId: e.year ? `${slugish(title)}-${e.year}` : slugish(title),
+        sourceId: externalIds?.wikidata ?? slugish(title),
         title,
         kind: e.kind ?? 'documentary',
         year: e.year,
         tags: Array.from(new Set(['curated', ...(e.tags ?? [])])),
-        externalIds: Object.keys(externalIds).length > 0 ? externalIds : undefined,
-        sourceUrl: externalIds.wikidata
+        externalIds,
+        sourceUrl: externalIds?.wikidata
           ? `https://www.wikidata.org/wiki/${externalIds.wikidata}`
           : undefined,
       };
@@ -200,6 +206,16 @@ async function sparql(query: string): Promise<Binding[]> {
   return body.results?.bindings ?? [];
 }
 
+/** Copy what the lookup found onto a seed item without overwriting what the seed said. */
+function applyLookupRow(item: MediaItemInput, row: Binding): void {
+  const ids = item.externalIds as Record<string, string>;
+  if (!ids.imdb && row.imdb?.value && IMDB_RE.test(row.imdb.value)) ids.imdb = row.imdb.value;
+  if (!ids.tmdb && row.tmdb?.value && TMDB_RE.test(row.tmdb.value)) ids.tmdb = row.tmdb.value;
+  const year = row.date ? Number(row.date.value.slice(0, 4)) : Number.NaN;
+  if (!item.year && Number.isFinite(year) && year >= 1900) item.year = year;
+  if (row.doc?.value === 'true') item.kind = 'documentary';
+}
+
 /** Fill missing IMDb/TMDB ids, year and documentary flag on seed items that name a Q-id. */
 async function enrichSeedFromWikidata(items: MediaItemInput[]): Promise<void> {
   const byId = new Map<string, MediaItemInput>();
@@ -209,13 +225,7 @@ async function enrichSeedFromWikidata(items: MediaItemInput[]): Promise<void> {
   if (byId.size === 0) return;
   for (const row of await sparql(idLookupSparql(Array.from(byId.keys())))) {
     const item = row.item ? byId.get(qid(row.item.value)) : undefined;
-    if (!item) continue;
-    const ids = item.externalIds as Record<string, string>;
-    if (!ids.imdb && row.imdb?.value && IMDB_RE.test(row.imdb.value)) ids.imdb = row.imdb.value;
-    if (!ids.tmdb && row.tmdb?.value && TMDB_RE.test(row.tmdb.value)) ids.tmdb = row.tmdb.value;
-    const year = row.date ? Number(row.date.value.slice(0, 4)) : Number.NaN;
-    if (!item.year && Number.isFinite(year) && year >= 1900) item.year = year;
-    if (row.doc?.value === 'true') item.kind = 'documentary';
+    if (item) applyLookupRow(item, row);
   }
 }
 

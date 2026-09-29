@@ -5,14 +5,54 @@ import { notFound, notImplemented } from '../lib/errors.js';
 import { bboxSchema, idParams, paginationQuery, pointInput, slugParams } from '../lib/schemas.js';
 import { currentUser, requireAuth } from '../middleware/auth.js';
 import { getValidated, validate } from '../middleware/validate.js';
-import { HOME_AREAS, PLACE_TYPES, VEGAN_LEVELS } from '../models/index.js';
-import { getApprovedPlaceBySlug, listApprovedPlaces, submitPlace } from '../services/places.js';
+import { HOME_AREAS, PLACE_TYPES, type PlaceType, VEGAN_LEVELS } from '../models/index.js';
+import {
+  getApprovedPlaceBySlug,
+  listApprovedPlaces,
+  listMapPins,
+  submitPlace,
+} from '../services/places.js';
 
-const listQuery = paginationQuery.extend({
+/** `types=cafe,restaurant`: a comma list where every entry must be a known type. */
+const typesList = z.string().transform((raw, ctx) => {
+  const parts = Array.from(
+    new Set(
+      raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  );
+  const unknown = parts.filter((p) => !(PLACE_TYPES as readonly string[]).includes(p));
+  if (parts.length === 0 || unknown.length > 0) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `types must be a comma list of ${PLACE_TYPES.join(', ')}`,
+    });
+    return z.NEVER;
+  }
+  return parts as PlaceType[];
+});
+
+/** Filters shared by the list and the map pins; defaults per spec section 9. */
+const filterQuery = z.object({
   bbox: bboxSchema,
+  veganLevel: z.enum([...VEGAN_LEVELS, 'all']).default('full'),
+  types: typesList.optional(),
   type: z.enum(PLACE_TYPES).optional(),
+  includeChains: z.stringbool().default(false),
   q: z.string().trim().min(1).max(80).optional(),
 });
+
+const listQuery = paginationQuery.extend(filterQuery.shape);
+
+type FilterInput = z.infer<typeof filterQuery>;
+
+/** `type=` (single) is kept for older clients and folded into `types`. */
+function withTypes<T extends FilterInput>(query: T): T & { types?: PlaceType[] } {
+  const types = query.types ?? (query.type ? [query.type] : undefined);
+  return { ...query, types };
+}
 
 const createBody = z
   .object({
@@ -49,7 +89,13 @@ export function placesRouter(deps: AppDeps): Router {
 
   router.get('/', validate({ query: listQuery }), async (req, res) => {
     const { query } = getValidated<{ query: z.infer<typeof listQuery> }>(req);
-    res.json(await listApprovedPlaces(query));
+    res.json(await listApprovedPlaces(withTypes(query)));
+  });
+
+  // Before `/:slug` so the literal path wins.
+  router.get('/map-pins', validate({ query: filterQuery }), async (req, res) => {
+    const { query } = getValidated<{ query: FilterInput }>(req);
+    res.json(await listMapPins(withTypes(query)));
   });
 
   router.get('/:slug', validate({ params: slugParams }), async (req, res) => {

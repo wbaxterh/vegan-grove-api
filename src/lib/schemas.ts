@@ -13,7 +13,7 @@ export const idParams = z.object({ id: objectIdSchema });
 export const slugParams = z.object({ slug: z.string().min(1).max(80) });
 
 export const paginationQuery = z.object({
-  cursor: z.string().max(64).optional(),
+  cursor: z.string().max(400).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 

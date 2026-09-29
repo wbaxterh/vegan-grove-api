@@ -67,8 +67,21 @@ npm run validate        # biome check, tsc --noEmit, vitest run, tsc build
 | `npm run lint:fix` | `biome check --write .` |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run validate` | lint, typecheck, test, build: the CI contract and the PR gate |
-| `npm run seed:places:osm` | Overpass importer for `diet:vegan` places in the SoCal bbox; `-- --dry-run` prints counts only, a real run upserts as `pending` by `osmId` and never resets an approved place |
+| `npm run seed:places:osm` | Overpass importer for `diet:vegan` places in the SoCal bbox; `-- --dry-run` prints counts only, a real run upserts by `(source, sourceId)` through the ingest service as `pending` (`-- --approve` lands approved) and never resets a moderated row or an admin-edited field. Skips fast food unless fully vegan, flags chains, maps hours, phone, website, postcode, cuisine and access tags |
+| `npm run seed:places:gardens` | Same pipeline for OSM community gardens (`leisure=garden` + `garden:type=community`) and named allotments, as type `garden`, fully vegan |
+| `npm run seed:sanctuaries` | Curated sanctuaries from `scripts/data/sanctuaries.json`, approved on insert |
+| `npm run seed:groves` | The ten regional Groves, one per home area, idempotent by slug |
+| `npm run make-admin -- <email>` | Flip an existing member's role to admin |
+| `npm run ingest:events:ics` | ICS calendar feeds from `scripts/data/event-sources.json`, POSTed to `/api/ingest/events` |
+| `npm run ingest:events:jsonld` | schema.org `Event` JSON-LD from the allowlisted pages in the same file |
+| `npm run ingest:organizations` | Curated `scripts/data/organizations.json` to `/api/ingest/organizations` |
+| `npm run ingest:media:wikidata` | One SPARQL query for films about veganism and animals to `/api/ingest/media`; caches the result for the TMDB step |
+| `npm run ingest:media:tmdb` | Synopsis, poster (to S3) and JustWatch-attributed watch providers for items with a TMDB id; needs `TMDB_API_KEY` |
+| `npm run ingest:guides` | Guide drafts from `scripts/data/guides.json` to `/api/ingest/guides`, landing as `draft` |
+| `npm run ingest:places:osm`, `ingest:places:gardens`, `ingest:sanctuaries` | Aliases for the three seed scripts, using the names from the ingest contract |
 | `npm run prepare` | installs the husky hooks |
+
+Every seed and ingest script takes `--dry-run`. Run it first against production, always.
 
 ## Configuration
 
@@ -109,9 +122,44 @@ Every variable is listed in [`.env.example`](./.env.example) with a one-line com
 | `DM_RETENTION_DAYS` | Days before a message row expires | integer, default 90 |
 | `APPLE_CLIENT_ID` | Sign in with Apple audience | bundle id or services id |
 | `GOOGLE_CLIENT_IDS` | Google OAuth audiences (iOS, Android, web) | comma-separated client ids |
-| `OVERPASS_URL` | Mirror for the OSM seed script | URL, default kumi.systems |
+| `INGEST_KEY` | Shared secret for `POST /api/ingest/:resource` (`X-Ingest-Key`); ingest answers `503 ingest_unconfigured` until set | `openssl rand -hex 32` |
+| `TRUSTED_SOURCES` | Source ids whose ingested rows land approved, published or verified instead of in the queue | comma-separated, e.g. `osm,curated` |
+| `RATE_LIMIT_INGEST_MAX` | Ingest calls per 15 min per key or admin session | integer, default 60 |
+| `API_URL` | Scripts only: where the ingest scripts POST | URL, default `https://api.vegangrove.org` |
+| `TMDB_API_KEY` | Scripts only: `ingest:media:tmdb` | secret |
+| `OVERPASS_URL` | Mirror for the OSM seed scripts | URL, default kumi.systems |
 | `STATS_CACHE_TTL_MS` | Cache lifetime for `GET /api/stats` | integer, default 300000 |
 | `REMINDER_TICK_MS` | Reminder worker interval | integer, default 60000 |
+
+## Ingest
+
+Public data (places, events, organizations, media, guides) is fed by the scripts above and by an external bot through one endpoint, `POST /api/ingest/:resource`. The binding contract is section 9 of the scaffold spec, mirrored at [docs.vegangrove.org](https://docs.vegangrove.org); the short version:
+
+- Auth is the `X-Ingest-Key` header, compared in constant time against `INGEST_KEY`, or an admin session. 60 calls per 15 minutes per key, `Retry-After` on 429.
+- Body `{ source, items }`, at most 200 items. Each item is validated with zod on its own (schemas in `src/services/ingest.ts`), so one bad item never fails the batch. Items carrying personal fields (`email`, `attendees`, `phone` off a place) are rejected by name.
+- Upsert key is `(source, sourceId)`. `source` is the data origin (`osm`, `curated`, `ics:<org>`, `jsonld:<org>`, `wikidata`); `bot:grokbot` is reserved for bot-authored guide drafts.
+- New rows land `pending` (places, events), `draft` (media, guides) or `verified: false` (organizations) unless the source is in `TRUSTED_SOURCES`. A re-ingest never moves a moderated row backwards, never deletes, and never overwrites a field listed in the row's `adminEdited`; an unchanged item still bumps `lastSeenAt`.
+- Events name their host; the organization is resolved by slug and created as an unverified stub when missing. A curated organization with the same slug later adopts the stub.
+
+```http
+POST /api/ingest/places
+X-Ingest-Key: <INGEST_KEY>
+Content-Type: application/json
+
+{ "source": "osm", "items": [
+  { "sourceId": "node/123", "name": "Seed Kitchen", "type": "restaurant", "veganLevel": "full",
+    "location": { "lng": -118.19, "lat": 33.77 }, "city": "Long Beach", "tags": ["thai"] },
+  { "sourceId": "node/124", "name": "No type" }
+] }
+```
+
+```json
+HTTP 207
+{ "inserted": 1, "updated": 0, "unchanged": 0,
+  "rejected": [ { "index": 1, "sourceId": "node/124", "errors": ["type: Invalid option: expected one of ..."] } ] }
+```
+
+200 when nothing was rejected, 207 when anything was (including everything), 400 for an envelope problem, 401 without a valid key or admin session, 503 until `INGEST_KEY` exists. Logs carry the source and the counts, never an item.
 
 ## Project layout
 
@@ -127,10 +175,14 @@ src/
   middleware/         requireAuth, requireAdmin, validate, rate limits, error handler
   socket/             the /messages namespace and its rooms
   workers/            reminder sender, start and stop wired into shutdown
-  lib/                logger with redaction, AppError, cursor pagination, slugs, SSE helpers
+  lib/                logger with redaction, AppError, cursor and keyset pagination, slugs, SSE helpers,
+                      areas.ts (lat/lng boxes for the home areas), placeDescription.ts
   types/              Express request augmentation (req.auth)
 scripts/
-  seed-places-osm.ts  Overpass importer behind seed:places:osm
+  seed-*.ts           direct-to-database seeds (OSM places, gardens, sanctuaries, groves)
+  lib/osm.ts          Overpass fetch, tag mapping and the batch loop the two OSM seeds share
+  ingest/             HTTP ingest scripts (events, organizations, media, guides) and their libs
+  data/               source allowlists and curated JSON; data/generated/ is a git-ignored cache
 test/                 vitest + supertest suites and the in-memory MongoDB helpers
 ecosystem.config.cjs  PM2 definition; secrets come from the env file on the host, never from here
 ```
@@ -141,19 +193,22 @@ ecosystem.config.cjs  PM2 definition; secrets come from the env file on the host
 - Auth, tested end to end: register and login (argon2id), magic link issue (always `202`, so the endpoint cannot enumerate accounts) and verify, logout. Sign in with Apple and Google verify the provider token server-side and answer `503 provider_unconfigured` until their client ids are set.
 - Sessions: random 32-byte tokens returned once, stored as SHA-256 hashes, sliding 30-day expiry, list and revoke under `/api/me/sessions`.
 - Member record: `GET`, strict `PATCH`, and `DELETE /api/me` as a hard delete.
-- Places: list by bounding box (approved only), get by slug, submit as `pending`, admin pending queue with approve and reject. Admin role is read from the database on every request.
+- Places: list by bounding box (approved only) ranked fully vegan first, independents before chains, then reviews and name, with `veganLevel`, `types`, `includeChains` and `q` filters; `map-pins` for up to 1000 slim pins; get by slug; submit as `pending`; admin pending queue with approve and reject. Admin role is read from the database on every request.
+- Events: list from now on, soonest first, filtered by window, area, type and grove, with visibility decided per row on the server (public, grove members, the creator's friends) and the address hidden until RSVP when the organizer asks; detail with the host summary.
+- Organizations (verified first, admin ids never serialized), groves (counts only), media and guides (published only): public lists and detail.
+- Ingest: `POST /api/ingest/:resource` behind a constant-time key or an admin session, per-item validation, moderation defaults, admin edits preserved. See [Ingest](#ingest).
 - Companion: `POST /api/companion/chat` streams SSE (`meta`, `delta`, `done` or `error`) with a per-member rate limit; unpinned conversations carry a 24-hour TTL.
 - Wired but waiting on their routes: the `/messages` Socket.IO namespace (session auth, `user:` and `conversation:` rooms with membership checks), the presigned S3 upload service, the AES-256-GCM message cipher, and the reminder worker tick.
-- Ten vitest suites, including one that proves every stub validates and answers `501` in the standard shape.
+- Fifteen vitest suites, including one that proves every remaining stub validates and answers `501` in the standard shape.
 
 ## Not yet
 
 Every route below exists, is mounted, validates its input, and answers `501 { error: { code: 'not_implemented' } }` with a `// TODO(m2)` comment beside it. Implement in place; do not add a parallel route.
 
-- Place reviews and place lists; events, groves, organizations; friends and invites.
+- Place reviews and place lists; event create, edit, RSVP and attendees; grove join and leave; friends and invites.
 - Feed, posts, reactions, comments, saves, a handle's public posts, reports.
 - Upload presign and video create; conversations and messages over REST.
-- Media library, guides, the private action log, push tokens, notification preferences.
+- The private action log, push tokens, notification preferences.
 - Companion conversation list, pin, and delete; admin media and guide CRUD and the report queue; reminder delivery.
 
 ## Privacy, by construction

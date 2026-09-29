@@ -29,20 +29,7 @@ describe('not-yet-implemented routes', () => {
     await ctx.close();
   });
 
-  const publicGets = [
-    '/api/events',
-    '/api/events/some-slug',
-    '/api/groves',
-    '/api/groves/some-slug',
-    '/api/organizations',
-    '/api/organizations/some-slug',
-    '/api/media',
-    '/api/media/some-slug',
-    '/api/guides',
-    '/api/guides/some-slug',
-    '/api/handles/someone/posts',
-    '/api/places/000000000000000000000000/reviews',
-  ];
+  const publicGets = ['/api/handles/someone/posts', '/api/places/000000000000000000000000/reviews'];
 
   it.each(publicGets)('GET %s answers 501 not_implemented', async (path) => {
     const res = await supertest(ctx.app).get(path);

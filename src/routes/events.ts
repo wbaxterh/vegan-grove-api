@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import type { AppDeps } from '../lib/deps.js';
-import { notImplemented } from '../lib/errors.js';
+import { notFound, notImplemented } from '../lib/errors.js';
 import {
   idParams,
   objectIdSchema,
@@ -9,8 +9,8 @@ import {
   pointInput,
   slugParams,
 } from '../lib/schemas.js';
-import { requireAuth } from '../middleware/auth.js';
-import { validate } from '../middleware/validate.js';
+import { optionalAuth, requireAuth } from '../middleware/auth.js';
+import { getValidated, validate } from '../middleware/validate.js';
 import {
   EVENT_TYPES,
   EVENT_VISIBILITIES,
@@ -18,12 +18,14 @@ import {
   HOST_TYPES,
   RSVP_STATUSES,
 } from '../models/index.js';
+import { getVisibleEventBySlug, listVisibleEvents, viewerFor } from '../services/events.js';
 
 const listQuery = paginationQuery.extend({
-  from: z.iso.datetime().optional(),
-  to: z.iso.datetime().optional(),
+  from: z.iso.datetime({ offset: true }).optional(),
+  to: z.iso.datetime({ offset: true }).optional(),
   area: z.enum(HOME_AREAS).optional(),
   groveId: objectIdSchema.optional(),
+  type: z.enum(EVENT_TYPES).optional(),
 });
 
 const eventBody = z
@@ -51,14 +53,39 @@ const patchBody = eventBody.partial().extend({
 
 const rsvpBody = z.object({ status: z.enum(RSVP_STATUSES).default('going') }).strict();
 
-// TODO(m2): events. Listing is public; writes need grove organizer or org admin;
-// attendees are visible to the organizer only, counts to everyone.
+/**
+ * Events. Reads are public but filtered per viewer (see services/events.ts);
+ * a token is optional and, when present, must be valid.
+ */
 export function eventsRouter(deps: AppDeps): Router {
   const router = Router();
   const auth = requireAuth(deps);
+  const maybeAuth = optionalAuth(deps);
 
-  router.get('/', validate({ query: listQuery }), notImplemented);
-  router.get('/:slug', validate({ params: slugParams }), notImplemented);
+  router.get('/', maybeAuth, validate({ query: listQuery }), async (req, res) => {
+    const { query } = getValidated<{ query: z.infer<typeof listQuery> }>(req);
+    const viewer = await viewerFor(req.auth?.user);
+    res.json(
+      await listVisibleEvents(
+        {
+          ...query,
+          from: query.from ? new Date(query.from) : undefined,
+          to: query.to ? new Date(query.to) : undefined,
+        },
+        viewer,
+      ),
+    );
+  });
+
+  router.get('/:slug', maybeAuth, validate({ params: slugParams }), async (req, res) => {
+    const { params } = getValidated<{ params: z.infer<typeof slugParams> }>(req);
+    const event = await getVisibleEventBySlug(params.slug, await viewerFor(req.auth?.user));
+    if (!event) throw notFound('Event not found.');
+    res.json({ event });
+  });
+
+  // TODO(m2): writes need grove organizer or org admin; attendees are visible
+  // to the organizer only, counts to everyone.
   router.post('/', auth, validate({ body: eventBody }), notImplemented);
   router.patch('/:id', auth, validate({ params: idParams, body: patchBody }), notImplemented);
   router.post('/:id/rsvp', auth, validate({ params: idParams, body: rsvpBody }), notImplemented);

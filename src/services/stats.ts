@@ -3,13 +3,16 @@ import {
   GroveModel,
   GuideModel,
   MediaItemModel,
+  OrganizationModel,
   PlaceModel,
   UserModel,
 } from '../models/index.js';
 
 export interface Stats {
   places: number;
+  sanctuaries: number;
   upcomingEvents: number;
+  organizations: number;
   groves: number;
   guides: number;
   media: number;
@@ -19,19 +22,32 @@ export interface Stats {
 
 async function computeStats(): Promise<Stats> {
   const now = new Date();
-  const [places, upcomingEvents, groves, guides, media, members] = await Promise.all([
-    PlaceModel.countDocuments({ approvalStatus: 'approved' }),
-    EventModel.countDocuments({
-      status: 'published',
-      visibility: 'public',
-      startsAt: { $gte: now },
-    }),
-    GroveModel.countDocuments({}),
-    GuideModel.countDocuments({ status: 'published' }),
-    MediaItemModel.countDocuments({ status: 'published' }),
-    UserModel.countDocuments({ deletedAt: null }),
-  ]);
-  return { places, upcomingEvents, groves, guides, media, members, generatedAt: now.toISOString() };
+  const [places, sanctuaries, upcomingEvents, organizations, groves, guides, media, members] =
+    await Promise.all([
+      PlaceModel.countDocuments({ approvalStatus: 'approved' }),
+      PlaceModel.countDocuments({ approvalStatus: 'approved', type: 'sanctuary' }),
+      EventModel.countDocuments({
+        status: 'published',
+        visibility: 'public',
+        endsAt: { $gte: now },
+      }),
+      OrganizationModel.countDocuments({ verified: true }),
+      GroveModel.countDocuments({}),
+      GuideModel.countDocuments({ status: 'published' }),
+      MediaItemModel.countDocuments({ status: 'published' }),
+      UserModel.countDocuments({ deletedAt: null }),
+    ]);
+  return {
+    places,
+    sanctuaries,
+    upcomingEvents,
+    organizations,
+    groves,
+    guides,
+    media,
+    members,
+    generatedAt: now.toISOString(),
+  };
 }
 
 /**

@@ -32,6 +32,19 @@ export function requireAuth(deps: Pick<AppDeps, 'env'>): RequestHandler {
   };
 }
 
+/**
+ * Public routes whose answer depends on who is asking (event visibility):
+ * no token means anonymous, a token must still be valid so an expired session
+ * is reported rather than silently downgraded.
+ */
+export function optionalAuth(deps: Pick<AppDeps, 'env'>): RequestHandler {
+  const required = requireAuth(deps);
+  return (req, res, next) => {
+    if (bearerToken(req.header('authorization'))) return required(req, res, next);
+    next();
+  };
+}
+
 /** The authenticated principal. Throws if used on a route without `requireAuth`. */
 export function currentUser(req: Request): UserDoc {
   if (!req.auth) throw unauthorized();

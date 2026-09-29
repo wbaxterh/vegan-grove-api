@@ -51,8 +51,10 @@ describe('GET /api/stats', () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       places: 2,
+      sanctuaries: 0,
       guides: 1,
       upcomingEvents: 0,
+      organizations: 0,
       groves: 0,
       media: 0,
       members: 0,

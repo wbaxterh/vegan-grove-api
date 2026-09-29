@@ -72,6 +72,14 @@ export const envSchema = z
     APPLE_CLIENT_ID: optionalString,
     GOOGLE_CLIENT_IDS: z.preprocess(csv, z.array(z.string()).default([])),
 
+    // Ingest contract (spec section 9). The endpoint answers 503 until INGEST_KEY exists.
+    INGEST_KEY: optionalString,
+    TRUSTED_SOURCES: z.preprocess(csv, z.array(z.string()).default([])),
+    RATE_LIMIT_INGEST_MAX: z.coerce.number().int().min(1).default(60),
+    // Scripts only: where the ingest scripts POST, and the TMDB enrichment key.
+    API_URL: z.url().default('https://api.vegangrove.org'),
+    TMDB_API_KEY: optionalString,
+
     OVERPASS_URL: z.url().default('https://overpass.kumi.systems/api/interpreter'),
     STATS_CACHE_TTL_MS: z.coerce
       .number()

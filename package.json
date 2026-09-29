@@ -19,9 +19,20 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "validate": "npm run lint && npm run typecheck && npm run test && npm run build",
     "seed:places:osm": "tsx scripts/seed-places-osm.ts",
+    "seed:places:gardens": "tsx scripts/seed-places-gardens.ts",
     "prepare": "husky",
     "seed:sanctuaries": "tsx scripts/seed-sanctuaries.ts",
-    "make-admin": "tsx scripts/make-admin.ts"
+    "make-admin": "tsx scripts/make-admin.ts",
+    "seed:groves": "tsx scripts/seed-groves.ts",
+    "ingest:places:osm": "tsx scripts/seed-places-osm.ts",
+    "ingest:places:gardens": "tsx scripts/seed-places-gardens.ts",
+    "ingest:sanctuaries": "tsx scripts/seed-sanctuaries.ts",
+    "ingest:events:ics": "tsx scripts/ingest/events-ics.ts",
+    "ingest:events:jsonld": "tsx scripts/ingest/events-jsonld.ts",
+    "ingest:organizations": "tsx scripts/ingest/organizations.ts",
+    "ingest:media:wikidata": "tsx scripts/ingest/media-wikidata.ts",
+    "ingest:media:tmdb": "tsx scripts/ingest/media-tmdb.ts",
+    "ingest:guides": "tsx scripts/ingest/guides.ts"
   },
   "lint-staged": {
     "*.{ts,js,json}": "biome check --write",

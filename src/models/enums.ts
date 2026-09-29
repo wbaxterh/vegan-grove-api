@@ -33,12 +33,21 @@ export const PLACE_TYPES = [
   'shop',
   'organization',
   'venue',
+  'garden',
 ] as const;
 export type PlaceType = (typeof PLACE_TYPES)[number];
 export const VEGAN_LEVELS = ['full', 'options'] as const;
+export type VeganLevel = (typeof VEGAN_LEVELS)[number];
 export const APPROVAL_STATUSES = ['private', 'pending', 'approved', 'rejected'] as const;
-export const PLACE_SOURCES = ['osm', 'user', 'curated'] as const;
+/**
+ * Sources the API itself writes. Ingested rows carry a free-form source id
+ * (`ics:farmsanctuary`, `wikidata`, `bot:grokbot`); see the ingest contract.
+ */
+export const BUILT_IN_SOURCES = ['osm', 'user', 'curated'] as const;
 export const REVIEW_STATUSES = ['active', 'removed'] as const;
+
+export const INGEST_RESOURCES = ['places', 'events', 'organizations', 'media', 'guides'] as const;
+export type IngestResource = (typeof INGEST_RESOURCES)[number];
 
 export const ORGANIZATION_TYPES = ['org', 'sanctuary', 'business'] as const;
 export const GROVE_ROLES = ['member', 'organizer'] as const;
@@ -55,7 +64,8 @@ export const EVENT_TYPES = [
 ] as const;
 export const HOST_TYPES = ['grove', 'organization'] as const;
 export const EVENT_VISIBILITIES = ['public', 'grove', 'friends'] as const;
-export const EVENT_STATUSES = ['draft', 'published', 'cancelled'] as const;
+/** `pending` is the moderation queue for ingested events; members' own drafts stay `draft`. */
+export const EVENT_STATUSES = ['draft', 'pending', 'published', 'cancelled'] as const;
 export const RSVP_STATUSES = ['going', 'interested'] as const;
 
 export const MEDIA_TYPES = ['image', 'video', 'carousel'] as const;

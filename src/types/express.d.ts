@@ -6,5 +6,7 @@ declare module 'express-serve-static-core' {
     auth?: { user: UserDoc; session: SessionDoc };
     /** Set by `validate()`: the parsed, typed request parts. */
     validated?: { body: unknown; query: unknown; params: unknown };
+    /** Set by `requireIngestPrincipal` on key-authenticated calls: a fingerprint, not the key. */
+    ingestKeyId?: string;
   }
 }

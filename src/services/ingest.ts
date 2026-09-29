@@ -113,9 +113,11 @@ export const mediaItemSchema = z
     kind: z.enum(MEDIA_KINDS),
     year: z.number().int().min(1900).max(2100).optional(),
     synopsis: z.string().trim().max(4000).optional(),
+    // An S3 key the script already uploaded: path segments and an image extension, no `..`.
     posterKey: z
       .string()
-      .regex(/^[A-Za-z0-9/_.-]{1,200}$/)
+      .max(200)
+      .regex(/^(?!.*\.\.)[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\.(jpg|jpeg|png|webp)$/)
       .optional(),
     watchLinks: z
       .array(z.object({ provider: z.string().trim().min(1).max(60), url: urlSchema }).strict())

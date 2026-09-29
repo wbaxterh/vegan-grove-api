@@ -13,6 +13,13 @@ describe('loadEnv', () => {
     expect(env.COMPANION_MODEL).toBe('claude-opus-5');
     expect(env.EMAIL_TRANSPORT).toBe('log');
     expect(env.SESSION_TTL_DAYS).toBe(30);
+    expect(env.INGEST_KEY).toBeUndefined();
+    expect(env.TRUSTED_SOURCES).toEqual([]);
+    expect(env.RATE_LIMIT_INGEST_MAX).toBe(60);
+    expect(env.API_URL).toBe('https://api.vegangrove.org');
+    const ingest = loadEnv({ ...base, INGEST_KEY: 'k', TRUSTED_SOURCES: 'osm, curated,' });
+    expect(ingest.INGEST_KEY).toBe('k');
+    expect(ingest.TRUSTED_SOURCES).toEqual(['osm', 'curated']);
   });
 
   it('treats empty values as unset so defaults still apply', () => {

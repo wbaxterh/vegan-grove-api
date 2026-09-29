@@ -47,6 +47,8 @@ export interface TestContext {
   env: Env;
   emails: CapturedEmail[];
   setCompanion(next: CompanionService): void;
+  /** A second app on the same database with different env values (e.g. no INGEST_KEY). */
+  buildApp(overrides: Record<string, string | undefined>): Express;
   /** Wipe every collection between tests. */
   reset(): Promise<void>;
   close(): Promise<void>;
@@ -54,8 +56,10 @@ export interface TestContext {
 
 export const TEST_DM_KEY = randomBytes(32).toString('base64');
 
-export async function createTestContext(): Promise<TestContext> {
-  const env = loadEnv({
+export async function createTestContext(
+  overrides: Record<string, string | undefined> = {},
+): Promise<TestContext> {
+  const baseEnv: Record<string, string | undefined> = {
     NODE_ENV: 'test',
     LOG_LEVEL: 'silent',
     MONGODB_URI: inject('mongoUri'),
@@ -65,9 +69,12 @@ export async function createTestContext(): Promise<TestContext> {
     RATE_LIMIT_AUTH_MAX: '10000',
     RATE_LIMIT_MAGIC_LINK_MAX: '10000',
     RATE_LIMIT_COMPANION_MAX: '10000',
+    RATE_LIMIT_INGEST_MAX: '10000',
     STATS_CACHE_TTL_MS: '300000',
     DM_ENCRYPTION_KEY: TEST_DM_KEY,
-  });
+    ...overrides,
+  };
+  const env = loadEnv(baseEnv);
   const logger = createLogger(env);
   await connectDb(env, logger);
 
@@ -91,6 +98,10 @@ export async function createTestContext(): Promise<TestContext> {
     emails,
     setCompanion(next) {
       companion = next;
+    },
+    buildApp(extra) {
+      const env2 = loadEnv({ ...baseEnv, ...extra });
+      return buildApp({ env: env2, logger, email, companion: companionProxy });
     },
     async reset() {
       emails.length = 0;

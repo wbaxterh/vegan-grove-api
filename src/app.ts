@@ -17,6 +17,7 @@ import { grovesRouter } from './routes/groves.js';
 import { guidesRouter } from './routes/guides.js';
 import { handlesRouter } from './routes/handles.js';
 import { healthRouter } from './routes/health.js';
+import { ingestRouter } from './routes/ingest.js';
 import { meRouter } from './routes/me.js';
 import { mediaRouter } from './routes/media.js';
 import { organizationsRouter } from './routes/organizations.js';
@@ -49,10 +50,12 @@ export function buildApp(deps: AppDeps): Express {
         callback(null, false);
       },
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-      allowedHeaders: ['Authorization', 'Content-Type'],
+      allowedHeaders: ['Authorization', 'Content-Type', 'X-Ingest-Key'],
       maxAge: 600,
     }),
   );
+  // Ingest batches carry up to 200 items (guides are long); everything else stays at 1 MB.
+  app.use('/api/ingest', express.json({ limit: '8mb' }));
   app.use(express.json({ limit: '1mb' }));
 
   // Request logging: id, method, path and status only. No query string (bbox
@@ -96,6 +99,7 @@ export function buildApp(deps: AppDeps): Express {
   app.use('/api/companion', companionRouter(deps));
   app.use('/api/push-tokens', pushTokensRouter(deps));
   app.use('/api/admin', adminRouter(deps));
+  app.use('/api/ingest', ingestRouter(deps));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

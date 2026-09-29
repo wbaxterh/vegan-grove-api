@@ -66,6 +66,7 @@
     "@types/nodemailer": "^8.0.2",
     "@types/supertest": "^7.2.1",
     "husky": "^9.1.7",
+    "ical.js": "^2.2.1",
     "lint-staged": "^17.5.1",
     "mongodb-memory-server": "^11.3.0",
     "secretlint": "^13.0.5",

@@ -1,0 +1,19 @@
+{
+  "source": "curated",
+  "items": [
+    {
+      "sourceId": "first-sanctuary-visit",
+      "title": "Your first sanctuary visit",
+      "category": "sanctuary",
+      "summary": "How to book, what to bring, and how to be useful on a first visit to a farmed-animal sanctuary in Southern California.",
+      "body": "# Your first sanctuary visit\n\nA sanctuary visit is the fastest way to turn an idea into a feeling. Two of the closest to Los Angeles are Farm Sanctuary's Acton shelter and The Gentle Barn in Santa Clarita; both are under an hour from most of the county.\n\n## Book first\n\nNeither sanctuary takes walk-ins. Farm Sanctuary runs guided tours on set days and group tours by appointment; The Gentle Barn opens to the public on Sundays and takes reservations. Check the current schedule on their sites (linked below) the week you plan to go, because tour days change with the season and the weather.\n\n## What to bring\n\n- Closed-toe shoes you do not mind getting dirty.\n- Water and sun protection. Both sites are exposed and hot in summer.\n- Nothing for the animals. Sanctuaries feed their residents on a schedule and ask visitors not to bring food.\n\n## Be useful\n\nAsk about volunteer days before you leave. Most sanctuaries need help with the unglamorous work (mucking, fence repair, event setup), and a returning volunteer is worth more to the animals than a first-time visitor. Log the visit in your action log so your Grove can see that someone went.\n",
+      "sources": [
+        {
+          "title": "Farm Sanctuary, Southern California shelter",
+          "url": "https://www.farmsanctuary.org/the-sanctuaries/los-angeles-ca/"
+        },
+        { "title": "The Gentle Barn, visit information", "url": "https://www.gentlebarn.org/" }
+      ]
+    }
+  ]
+}

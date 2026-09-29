@@ -1,0 +1,32 @@
+{
+  "source": "curated",
+  "items": [
+    {
+      "sourceId": "farm-sanctuary",
+      "name": "Farm Sanctuary",
+      "type": "sanctuary",
+      "description": "National farmed-animal rescue and advocacy organization founded in 1986, with a Southern California shelter in Acton that runs public tours and volunteer days.",
+      "website": "https://www.farmsanctuary.org/",
+      "area": "other",
+      "sourceUrl": "https://www.farmsanctuary.org/"
+    },
+    {
+      "sourceId": "the-gentle-barn",
+      "name": "The Gentle Barn",
+      "type": "sanctuary",
+      "description": "Sanctuary in Santa Clarita for rescued cows, horses, pigs, goats and chickens, open to the public on Sundays with private visits by reservation.",
+      "website": "https://www.gentlebarn.org/",
+      "area": "other",
+      "sourceUrl": "https://www.gentlebarn.org/"
+    },
+    {
+      "sourceId": "animal-place",
+      "name": "Animal Place",
+      "type": "sanctuary",
+      "description": "Farmed-animal sanctuary in Grass Valley, California, founded in 1989, offering public guided tours and publishing its events as an ICS feed.",
+      "website": "https://animalplace.org/",
+      "area": "other",
+      "sourceUrl": "https://animalplace.org/"
+    }
+  ]
+}

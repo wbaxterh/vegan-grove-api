@@ -19,7 +19,9 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "validate": "npm run lint && npm run typecheck && npm run test && npm run build",
     "seed:places:osm": "tsx scripts/seed-places-osm.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "seed:sanctuaries": "tsx scripts/seed-sanctuaries.ts",
+    "make-admin": "tsx scripts/make-admin.ts"
   },
   "lint-staged": {
     "*.{ts,js,json}": "biome check --write",

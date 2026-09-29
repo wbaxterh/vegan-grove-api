@@ -4,9 +4,13 @@
  *
  *   npm run seed:places:osm -- --dry-run   # fetch and print counts, touch nothing
  *   npm run seed:places:osm                # upsert by osmId as pending
+ *   npm run seed:places:osm -- --approve   # same, but the initial import lands approved
  *
- * Upserts never change `approvalStatus` or `slug` on rows that already exist,
- * so re-running after moderation does not push approved places back to pending.
+ * Upserts never change `slug` on rows that already exist, and never move a
+ * moderated row back to pending. `--approve` is for the first import of a
+ * curated data source: it inserts new rows as approved and promotes existing
+ * OSM rows that are still pending. Corrections after that go through the
+ * verification flow, not this script.
  */
 import { config as loadDotenv } from 'dotenv';
 import { loadEnv } from '../src/config/env.js';
@@ -193,6 +197,7 @@ function summarize(places: SeedPlace[]) {
 async function main(): Promise<void> {
   loadDotenv({ quiet: true });
   const dryRun = process.argv.includes('--dry-run');
+  const approve = process.argv.includes('--approve');
   const env = loadEnv(
     dryRun
       ? { ...process.env, MONGODB_URI: process.env.MONGODB_URI ?? 'mongodb://dry-run' }
@@ -250,7 +255,7 @@ async function main(): Promise<void> {
             },
             $setOnInsert: {
               slug,
-              approvalStatus: 'pending' as const,
+              approvalStatus: approve ? ('approved' as const) : ('pending' as const),
               source: 'osm' as const,
               description: '',
               photoKeys: [] as string[],
@@ -264,11 +269,21 @@ async function main(): Promise<void> {
     });
 
     const result = ops.length > 0 ? await PlaceModel.bulkWrite(ops, { ordered: false }) : null;
+    let promoted = 0;
+    if (approve) {
+      const res = await PlaceModel.updateMany(
+        { source: 'osm', approvalStatus: 'pending', osmId: { $in: places.map((p) => p.osmId) } },
+        { $set: { approvalStatus: 'approved' } },
+      );
+      promoted = res.modifiedCount;
+    }
     logger.info(
       {
         inserted: result?.upsertedCount ?? 0,
         updated: result?.modifiedCount ?? 0,
         matched: result?.matchedCount ?? 0,
+        promoted,
+        approve,
       },
       'seed complete',
     );

@@ -1,0 +1,35 @@
+[
+  {
+    "name": "Farm Sanctuary Southern California",
+    "address": "5200 Escondido Canyon Rd, Acton, CA 93510",
+    "city": "Acton",
+    "area": "other",
+    "lat": 34.5020853,
+    "lng": -118.2367727,
+    "website": "https://www.farmsanctuary.org/the-sanctuaries/los-angeles-ca/",
+    "description": "Farm Sanctuary's 39-acre Southern California shelter for rescued farm animals, about 45 minutes from Hollywood. One-hour guided tours run Friday through Sunday; group tours are by appointment. Check the site for the current tour schedule and volunteer days.",
+    "tags": ["farm-animals", "tours", "volunteering"]
+  },
+  {
+    "name": "The Gentle Barn",
+    "address": "15825 Sierra Hwy, Santa Clarita, CA 91390",
+    "city": "Santa Clarita",
+    "area": "other",
+    "lat": 34.4640033,
+    "lng": -118.4124636,
+    "website": "https://www.gentlebarn.org/",
+    "description": "Sanctuary for rescued cows, horses, pigs, goats, and chickens. Open to the public on Sundays; reservations are recommended. See the site for hours and private-visit options.",
+    "tags": ["farm-animals", "tours", "families"]
+  },
+  {
+    "name": "Kindred Spirits Care Farm",
+    "address": "11001 Farralone Ave, Chatsworth, CA 91311",
+    "city": "Chatsworth",
+    "area": "sfv",
+    "lat": 34.269377,
+    "lng": -118.6111779,
+    "website": "https://www.kindredspiritscarefarm.org/",
+    "description": "A care farm and animal sanctuary in the San Fernando Valley that pairs rescued animals with community and education programs. Ranch open hours and volunteer sign-ups are posted on the site.",
+    "tags": ["farm-animals", "volunteering", "education"]
+  }
+]

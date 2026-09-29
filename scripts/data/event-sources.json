@@ -1,26 +1,34 @@
 [
   {
-    "source": "ics:animalplace",
-    "hostName": "Animal Place",
-    "ics": "https://animalplace.org/events/?ical=1",
-    "verified": "2026-09-29: The Events Calendar feed, text/calendar, VTIMEZONE America/Los_Angeles, 2 VEVENTs; robots.txt allows /events/"
+    "source": "ics:saleranch",
+    "hostName": "Sale Ranch Animal Sanctuary",
+    "ics": "https://saleranch.org/events/?ical=1",
+    "verified": "2026-09-29: GET returned HTTP 200 with BEGIN:VCALENDAR, PRODID -//Sale Ranch Animal Sanctuary - ECPv6.17.5.1// (The Events Calendar WordPress plugin), X-WR-CALN"
   },
   {
-    "source": "jsonld:animalplace",
-    "hostName": "Animal Place",
-    "url": "https://animalplace.org/events/",
-    "verified": "2026-09-29: page carries one application/ld+json block, an array of schema.org Event objects with startDate, endDate, location and url"
+    "source": "jsonld:kindredspirits",
+    "hostName": "Kindred Spirits Care Farm",
+    "url": "https://www.kindredspiritscarefarm.org/new-events",
+    "detailLinkPattern": "^/new-events/\\d{4}/\\d{1,2}/\\d{1,2}/",
+    "verified": "2026-09-29: The list page /new-events has only LocalBusiness and WebSite JSON-LD. Each linked event detail page (checked https://www.kindredspiritscarefarm.org/"
+  },
+  {
+    "source": "jsonld:openbarn",
+    "hostName": "The Open Barn",
+    "url": "https://www.theopenbarn.org/event",
+    "detailLinkPattern": "^/event-details-registration/",
+    "verified": "2026-09-29: Wix Events site. The list page /event has no JSON-LD. Event detail pages under /event-details-registration/<slug> carry \"@type\": \"Event\" with Place "
   },
   {
     "source": "jsonld:farmsanctuary",
     "hostName": "Farm Sanctuary",
     "url": "https://www.farmsanctuary.org/events/",
-    "placeholder": "PLACEHOLDER, not ingested: checked 2026-09-29, the events index and event pages carry Yoast WebPage/Organization JSON-LD only, no Event nodes, and ?ical=1 returns HTML. Remove this note when Farm Sanctuary publishes Event markup or an ICS feed."
+    "verified": "2026-09-29: no Event JSON-LD and no ICS published; placeholder so the source is tracked, yields nothing until they add structured data"
   },
   {
     "source": "jsonld:gentlebarn",
     "hostName": "The Gentle Barn",
     "url": "https://www.gentlebarn.org/events/",
-    "placeholder": "PLACEHOLDER, not ingested: checked 2026-09-29, the page has no JSON-LD at all and no ICS feed. Remove this note when The Gentle Barn publishes Event markup or an ICS feed."
+    "verified": "2026-09-29: no Event JSON-LD and no ICS published; placeholder, yields nothing until they add structured data"
   }
 ]

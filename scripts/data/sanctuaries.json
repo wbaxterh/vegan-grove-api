@@ -31,5 +31,115 @@
     "website": "https://www.kindredspiritscarefarm.org/",
     "description": "A care farm and animal sanctuary in the San Fernando Valley that pairs rescued animals with community and education programs. Ranch open hours and volunteer sign-ups are posted on the site.",
     "tags": ["farm-animals", "volunteering", "education"]
+  },
+  {
+    "name": "Saving Grace Animal Sanctuary",
+    "address": "1575 Sierra Highway, Acton, CA 93510",
+    "city": "Acton",
+    "area": "other",
+    "lat": 34.4874042,
+    "lng": -118.1435462,
+    "website": "https://www.savinggraceanimalsanctuary.org/",
+    "description": "A 501(c)(3) farm animal sanctuary in Acton with about 30 rescued residents, including cows, donkeys, horses, pigs, sheep, goats, chickens, turkeys and rabbits. Visits are by appointment with at least 24 hours notice through the request form on the site, and volunteers sign up the same way.",
+    "tags": ["farm-animals", "by-appointment", "volunteering"]
+  },
+  {
+    "name": "Sale Ranch Animal Sanctuary",
+    "address": "39850 Voyager Road, Temecula, CA 92592",
+    "city": "Temecula",
+    "area": "inland_empire",
+    "lat": 33.5905112,
+    "lng": -116.9647454,
+    "website": "https://saleranch.org/",
+    "description": "Off-grid farmed animal rescue in the hills east of Temecula, home to horses, goats, sheep, pigs, chickens and dogs. It is not open for drop-in visits; the public comes for private ranch tours and ticketed events, and volunteers 18 and over commit to a weekly three-hour shift for at least three months.",
+    "tags": ["farm-animals", "tours", "volunteering", "events"]
+  },
+  {
+    "name": "Farm Animal Refuge",
+    "address": "33233 Shockey Truck Trail, Campo, CA 91906",
+    "city": "Campo",
+    "area": "san_diego",
+    "lat": 32.629056,
+    "lng": -116.433459,
+    "website": "https://farmanimalrefuge.org/",
+    "description": "A 501(c)(3) rescue in the San Diego County backcountry for abused, neglected and slaughter-bound farm animals, with more than 70 residents including pigs, goats, turkeys and chickens. Visits are by arrangement: private two-hour tours, periodic open houses and free educational field trips, plus a volunteer program.",
+    "tags": ["farm-animals", "tours", "volunteering", "education"]
+  },
+  {
+    "name": "Farmstrong Rescue",
+    "address": "30725 San Timoteo Canyon Rd, Redlands, CA 92373",
+    "city": "Redlands",
+    "area": "inland_empire",
+    "lat": 33.9815549,
+    "lng": -117.1275808,
+    "website": "https://farmstrongrescue.org/",
+    "description": "A 501(c)(3) rescue founded in 2025 in San Timoteo Canyon that shelters abandoned farm animals alongside dogs, cats, ducks, geese and tortoises. The public comes for field trips, a youth program and a seasonal pumpkin patch, and there is a volunteer sign-up on the site.",
+    "tags": ["farm-animals", "volunteering", "families", "education"]
+  },
+  {
+    "name": "Shambala Preserve",
+    "address": "6867 Soledad Canyon Road, Acton, CA 93510",
+    "city": "Acton",
+    "area": "other",
+    "lat": 34.4398682,
+    "lng": -118.2531312,
+    "website": "https://www.shambala.org/",
+    "description": "Not a farm sanctuary: the Roar Foundation's preserve in Acton houses more than 50 rescued big cats, including lions, tigers, leopards and cougars. Visiting is by reserved safari tour, offered about once a month, for adults 18 and over.",
+    "tags": ["big-cats", "wildlife", "tours", "adults-only"]
+  },
+  {
+    "name": "Lions Tigers & Bears",
+    "address": "24402 Martin Way, Alpine, CA 91901",
+    "city": "Alpine",
+    "area": "san_diego",
+    "lat": 32.814221,
+    "lng": -116.622922,
+    "website": "https://lionstigersandbears.org/",
+    "description": "Exotic animal sanctuary in Alpine housing more than 60 rescued animals across 19 species, including lions, tigers, bears, leopards, bobcats and ranch animals. All visits are by reservation, Wednesday through Saturday, and the sanctuary runs volunteer and internship programs.",
+    "tags": ["big-cats", "wildlife", "tours", "volunteering"]
+  },
+  {
+    "name": "STAR Eco Station",
+    "address": "10101 Jefferson Blvd, Culver City, CA 90232",
+    "city": "Culver City",
+    "area": "la_westside",
+    "lat": 34.0125343,
+    "lng": -118.3897317,
+    "website": "https://www.ecostation.org/",
+    "description": "Environmental science museum and rescue center in Culver City that houses more than 200 exotic animals confiscated by wildlife authorities, from parrots and pythons to tortoises. Guided public tours start every hour on weekends from 10 am to 4 pm, and volunteers aged 14 and up commit to a weekly two-hour shift for at least three months.",
+    "tags": ["wildlife", "tours", "volunteering", "families", "education"]
+  },
+  {
+    "name": "Pacific Marine Mammal Center",
+    "address": "20612 Laguna Canyon Road, Laguna Beach, CA 92651",
+    "city": "Laguna Beach",
+    "area": "orange_county",
+    "lat": 33.5733021,
+    "lng": -117.7626014,
+    "website": "https://www.pacificmmc.org/",
+    "description": "Marine mammal hospital in Laguna Canyon that rescues, rehabilitates and releases stranded sea lions, elephant seals, harbor seals and fur seals. The visitor yard was listed as temporarily closed at the time of research, so check the site before going; volunteers help with animal care, education and the gift shop.",
+    "tags": ["marine-mammals", "wildlife", "volunteering"]
+  },
+  {
+    "name": "Marine Mammal Care Center Los Angeles",
+    "address": "3601 S. Gaffey St, Suite 8, San Pedro, CA 90731",
+    "city": "San Pedro",
+    "area": "south_bay",
+    "lat": 33.7123663,
+    "lng": -118.2939544,
+    "website": "https://www.marinemammalcare.org/",
+    "description": "Rehabilitation hospital for stranded sea lions and seals at Fort MacArthur in San Pedro. Public visitation with docents runs Friday through Monday from 10 am to 4 pm, and the center depends on volunteer hours for animal care and education.",
+    "tags": ["marine-mammals", "wildlife", "volunteering", "families"]
+  },
+  {
+    "name": "Pebble Ranch Rescue",
+    "address": "13010 Muth Valley Rd, Lakeside, CA 92040",
+    "city": "Lakeside",
+    "area": "san_diego",
+    "lat": 32.9008414,
+    "lng": -116.895295,
+    "website": "https://www.pebbleranchrescue.org/",
+    "description": "A 501(c)(3) rescue in Lakeside, San Diego County, that rescues, rehabilitates and rehomes pot-bellied pigs; it is located on the grounds of a winery in Muth Valley. The site lists volunteer opportunities; contact them before visiting.",
+    "tags": ["pigs", "volunteering"]
   }
 ]

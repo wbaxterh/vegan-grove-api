@@ -2,31 +2,361 @@
   "source": "curated",
   "items": [
     {
-      "sourceId": "farm-sanctuary",
-      "name": "Farm Sanctuary",
+      "sourceId": "farm-sanctuary-southern-california",
+      "name": "Farm Sanctuary Southern California",
       "type": "sanctuary",
-      "description": "National farmed-animal rescue and advocacy organization founded in 1986, with a Southern California shelter in Acton that runs public tours and volunteer days.",
-      "website": "https://www.farmsanctuary.org/",
+      "description": "National farm animal protection nonprofit whose Southern California shelter in Acton houses about 100 rescued farm animals and runs guided tours Friday through Sunday.",
+      "website": "https://www.farmsanctuary.org/the-sanctuaries/los-angeles-ca/",
+      "socials": {
+        "instagram": "farmsanctuary",
+        "facebook": "farmsanctuary",
+        "youtube": "farmsanctuary1"
+      },
       "area": "other",
-      "sourceUrl": "https://www.farmsanctuary.org/"
+      "sourceUrl": "https://www.farmsanctuary.org/the-sanctuaries/los-angeles-ca/"
     },
     {
       "sourceId": "the-gentle-barn",
       "name": "The Gentle Barn",
       "type": "sanctuary",
-      "description": "Sanctuary in Santa Clarita for rescued cows, horses, pigs, goats and chickens, open to the public on Sundays with private visits by reservation.",
+      "description": "Santa Clarita sanctuary for rescued cows, horses, pigs, goats and birds that opens to the public on Sundays and pairs animal care with programs for youth.",
       "website": "https://www.gentlebarn.org/",
+      "socials": {
+        "instagram": "thegentlebarn",
+        "facebook": "TheGentleBarn",
+        "tiktok": "thegentlebarn",
+        "youtube": "gentlebarn"
+      },
       "area": "other",
-      "sourceUrl": "https://www.gentlebarn.org/"
+      "sourceUrl": "https://www.gentlebarn.org/events/"
     },
     {
-      "sourceId": "animal-place",
-      "name": "Animal Place",
+      "sourceId": "kindred-spirits-care-farm",
+      "name": "Kindred Spirits Care Farm",
       "type": "sanctuary",
-      "description": "Farmed-animal sanctuary in Grass Valley, California, founded in 1989, offering public guided tours and publishing its events as an ICS feed.",
-      "website": "https://animalplace.org/",
+      "description": "Chatsworth care farm that combines a rescued-animal sanctuary with garden, volunteer and education programs and posts ranch open hours on its site.",
+      "website": "https://www.kindredspiritscarefarm.org/",
+      "socials": {
+        "instagram": "kindredspiritscarefarm",
+        "facebook": "KindredSpiritsCareFarm"
+      },
+      "area": "sfv",
+      "sourceUrl": "https://www.kindredspiritscarefarm.org/ranch-open-hours"
+    },
+    {
+      "sourceId": "saving-grace-animal-sanctuary",
+      "name": "Saving Grace Animal Sanctuary",
+      "type": "sanctuary",
+      "description": "Acton farm animal sanctuary caring for about 30 rescued cows, donkeys, horses, pigs, sheep, goats and birds, visited by appointment with a day's notice.",
+      "website": "https://www.savinggraceanimalsanctuary.org/",
+      "socials": {
+        "instagram": "savinggracesanctuary",
+        "facebook": "Saving-Grace-Animal-Sanctuary-115304098554684",
+        "tiktok": "savinggracesanctuaryy"
+      },
       "area": "other",
-      "sourceUrl": "https://animalplace.org/"
+      "sourceUrl": "https://www.savinggraceanimalsanctuary.org/"
+    },
+    {
+      "sourceId": "sale-ranch-animal-sanctuary",
+      "name": "Sale Ranch Animal Sanctuary",
+      "type": "sanctuary",
+      "description": "Off-grid farmed animal rescue in Temecula that runs private tours, ticketed public events, an annual gala and a regenerative garden volunteer program.",
+      "website": "https://saleranch.org/",
+      "socials": {
+        "instagram": "saleranchsanctuary",
+        "facebook": "SaleRanchSanctuary",
+        "youtube": "channel/UCULl0VZW878fYo0FRRRrWTQ"
+      },
+      "area": "inland_empire",
+      "sourceUrl": "https://saleranch.org/volunteer/"
+    },
+    {
+      "sourceId": "farm-animal-refuge",
+      "name": "Farm Animal Refuge",
+      "type": "sanctuary",
+      "description": "San Diego County backcountry refuge near Campo for abused and slaughter-bound farm animals, offering private tours, open houses, free field trips and a volunteer program.",
+      "website": "https://farmanimalrefuge.org/",
+      "socials": {
+        "facebook": "farmanimalrefuge"
+      },
+      "area": "san_diego",
+      "sourceUrl": "https://farmanimalrefuge.org/farm-tour/"
+    },
+    {
+      "sourceId": "farmstrong-rescue",
+      "name": "Farmstrong Rescue",
+      "type": "sanctuary",
+      "description": "Redlands nonprofit founded in 2025 that shelters abandoned farm animals and runs field trips, a youth program, a seasonal pumpkin patch and volunteer days.",
+      "website": "https://farmstrongrescue.org/",
+      "socials": {
+        "facebook": "587052361166035",
+        "tiktok": "farmstrongrescue"
+      },
+      "area": "inland_empire",
+      "sourceUrl": "https://farmstrongrescue.org/"
+    },
+    {
+      "sourceId": "shambala-preserve",
+      "name": "Shambala Preserve (Roar Foundation)",
+      "type": "sanctuary",
+      "description": "Big cat preserve in Acton, home to more than 50 rescued lions, tigers, leopards and other exotic cats, visited on reserved monthly safaris for adults.",
+      "website": "https://www.shambala.org/",
+      "socials": {
+        "facebook": "roarfoundation"
+      },
+      "area": "other",
+      "sourceUrl": "https://www.shambala.org/"
+    },
+    {
+      "sourceId": "lions-tigers-and-bears",
+      "name": "Lions Tigers & Bears",
+      "type": "sanctuary",
+      "description": "Exotic animal sanctuary in Alpine housing more than 60 rescued animals across 19 species, including big cats, bears and ranch animals, open by reservation Wednesday through Saturday.",
+      "website": "https://lionstigersandbears.org/",
+      "socials": {
+        "instagram": "lionstigers_andbears",
+        "facebook": "lionstigerandbears",
+        "tiktok": "lionstigers_andbears",
+        "youtube": "channel/UCrzWP4iz_F7REhV2M6wIeYw"
+      },
+      "area": "san_diego",
+      "sourceUrl": "https://lionstigersandbears.org/contact/"
+    },
+    {
+      "sourceId": "star-eco-station",
+      "name": "STAR Eco Station",
+      "type": "sanctuary",
+      "description": "Culver City environmental science museum and rescue center for confiscated exotic wildlife, with hourly weekend public tours and a volunteer program for ages 14 and up.",
+      "website": "https://www.ecostation.org/",
+      "socials": {
+        "instagram": "starecostation",
+        "facebook": "starecostation",
+        "tiktok": "star.ecostation"
+      },
+      "area": "la_westside",
+      "sourceUrl": "https://www.ecostation.org/tours-and-hours"
+    },
+    {
+      "sourceId": "pacific-marine-mammal-center",
+      "name": "Pacific Marine Mammal Center",
+      "type": "sanctuary",
+      "description": "Laguna Beach hospital for stranded sea lions, elephant seals, harbor seals and fur seals that rehabilitates and releases its patients with the help of animal care and education volunteers.",
+      "website": "https://www.pacificmmc.org/",
+      "socials": {
+        "instagram": "pacificmmc",
+        "facebook": "pacificmmc",
+        "tiktok": "pacificmmc",
+        "youtube": "pacificmmc"
+      },
+      "area": "orange_county",
+      "sourceUrl": "https://www.pacificmmc.org/"
+    },
+    {
+      "sourceId": "marine-mammal-care-center",
+      "name": "Marine Mammal Care Center Los Angeles",
+      "type": "sanctuary",
+      "description": "San Pedro rehabilitation hospital for stranded sea lions and seals, open to visitors Friday through Monday with docent-led viewing.",
+      "website": "https://www.marinemammalcare.org/",
+      "socials": {
+        "instagram": "marinemammalcare",
+        "facebook": "marinemammalcare",
+        "tiktok": "marinemammalcare",
+        "youtube": "marinemammalcare"
+      },
+      "area": "south_bay",
+      "sourceUrl": "https://www.marinemammalcare.org/"
+    },
+    {
+      "sourceId": "pebble-ranch-rescue",
+      "name": "Pebble Ranch Rescue",
+      "type": "sanctuary",
+      "description": "Lakeside nonprofit that rescues, rehabilitates and rehomes pot-bellied pigs and lists volunteer opportunities on its site.",
+      "website": "https://www.pebbleranchrescue.org/",
+      "socials": {
+        "instagram": "pebbleranchrescue",
+        "tiktok": "pebbleranchrescue"
+      },
+      "area": "san_diego",
+      "sourceUrl": "https://www.pebbleranchrescue.org/"
+    },
+    {
+      "sourceId": "the-open-barn",
+      "name": "The Open Barn",
+      "type": "sanctuary",
+      "description": "Ramona farm animal sanctuary founded in 2020 that asks volunteers for a recurring commitment and hosts fundraising events on site; its street address is not published.",
+      "website": "https://www.theopenbarn.org/",
+      "socials": {
+        "instagram": "the_open_barn",
+        "facebook": "OpenBarnSanctuary"
+      },
+      "area": "san_diego",
+      "sourceUrl": "https://www.theopenbarn.org/volunteer"
+    },
+    {
+      "sourceId": "new-life-animal-sanctuary",
+      "name": "New Life Animal Sanctuary",
+      "type": "sanctuary",
+      "description": "Volunteer-run Lake Elsinore sanctuary for pigs, cows, goats, sheep, birds and small animals; visits are arranged by email and volunteers commit to weekly four-hour shifts.",
+      "website": "https://newlifeanimalsanctuary.org/",
+      "socials": {
+        "instagram": "newlifeanimalsanctuary",
+        "facebook": "NewLifeAnimalSanctuary",
+        "youtube": "channel/UCONdQ-Pu2PacaGYMwB861CQ"
+      },
+      "area": "inland_empire",
+      "sourceUrl": "https://newlifeanimalsanctuary.org/"
+    },
+    {
+      "sourceId": "viva-rescue",
+      "name": "Viva Rescue",
+      "type": "sanctuary",
+      "description": "Menifee nonprofit sanctuary for goats, chickens, horses and other rescued animals that offers private tours by donation and takes volunteer applications.",
+      "website": "https://vivaglobalrescue.org/",
+      "socials": {
+        "instagram": "vivaglobalrescue"
+      },
+      "area": "inland_empire",
+      "sourceUrl": "https://vivaglobalrescue.org/visit"
+    },
+    {
+      "sourceId": "kaleidoscope-desert-sanctuary",
+      "name": "Kaleidoscope Desert Sanctuary",
+      "type": "sanctuary",
+      "description": "Morongo Valley nonprofit where more than a hundred rescued animals roam among outdoor art; adults-only guided tours and day passes fund the rescue, and the address is shared on booking.",
+      "website": "https://kaleidoscopedesert.com/",
+      "socials": {
+        "instagram": "kaleidoscopedesert"
+      },
+      "area": "inland_empire",
+      "sourceUrl": "https://kaleidoscopedesert.com/"
+    },
+    {
+      "sourceId": "anonymous-for-the-voiceless",
+      "name": "Anonymous for the Voiceless",
+      "type": "org",
+      "description": "International street outreach organization whose Cube of Truth chapter directory lists Los Angeles, Orange County and San Diego groups.",
+      "website": "https://www.anonymousforthevoiceless.org/",
+      "socials": {
+        "instagram": "anonymousforthevoiceless",
+        "facebook": "anonymousforthevoiceless",
+        "youtube": "channel/UC7ajaARFH8ASLoh5gffmEkg"
+      },
+      "area": "other",
+      "sourceUrl": "https://cubeoftruth.com/en/chapters"
+    },
+    {
+      "sourceId": "mercy-for-animals",
+      "name": "Mercy For Animals",
+      "type": "org",
+      "description": "Farmed animal protection nonprofit headquartered on Sunset Boulevard in Los Angeles that runs investigations, corporate campaigns and public events.",
+      "website": "https://mercyforanimals.org/",
+      "socials": {
+        "instagram": "mercyforanimals",
+        "facebook": "mercyforanimals",
+        "bluesky": "mercyforanimals.org",
+        "tiktok": "mercyforanimals_us"
+      },
+      "area": "la_westside",
+      "sourceUrl": "https://mercyforanimals.org/events/"
+    },
+    {
+      "sourceId": "last-chance-for-animals",
+      "name": "Last Chance for Animals",
+      "type": "org",
+      "description": "Los Angeles animal rights nonprofit known for undercover investigations and campaigns against animal testing, the pet trade and the dog meat trade.",
+      "website": "https://lcanimal.org/",
+      "socials": {
+        "instagram": "lc4a",
+        "facebook": "LastChanceForAnimals",
+        "bluesky": "lc4a.bsky.social",
+        "youtube": "LastChanceForAnimals"
+      },
+      "area": "la_westside",
+      "sourceUrl": "https://lcanimal.org/"
+    },
+    {
+      "sourceId": "beagle-freedom-project",
+      "name": "Beagle Freedom Project",
+      "type": "org",
+      "description": "Valley Village nonprofit that rescues animals from laboratories and campaigns to end animal testing.",
+      "website": "https://bfp.org/",
+      "socials": {
+        "instagram": "beaglefreedom",
+        "facebook": "BeagleFreedom",
+        "tiktok": "beaglefreedom",
+        "youtube": "BeagleFreedomProject"
+      },
+      "area": "sfv",
+      "sourceUrl": "https://bfp.org/"
+    },
+    {
+      "sourceId": "social-compassion-in-legislation",
+      "name": "Social Compassion in Legislation",
+      "type": "org",
+      "description": "California nonprofit, run from Orange County, that sponsors and lobbies for state animal protection bills.",
+      "website": "https://socialcompassioninlegislation.org/",
+      "socials": {
+        "instagram": "socialcompassion",
+        "facebook": "socialcompassioninlegislation",
+        "youtube": "channel/UC20YwfzKp-g2FyPfk_vXI0w"
+      },
+      "area": "orange_county",
+      "sourceUrl": "https://socialcompassioninlegislation.org/about/"
+    },
+    {
+      "sourceId": "socal-vegfest",
+      "name": "SoCal VegFest",
+      "type": "org",
+      "description": "Annual Orange County vegan festival held at the OC Fair and Event Center in Costa Mesa.",
+      "website": "https://socalvegfest.org/",
+      "socials": {
+        "instagram": "socalvegfest",
+        "facebook": "SoCalVegfest",
+        "youtube": "channel/UCs2sdVfmkwwdsVT0dGrlYrA"
+      },
+      "area": "orange_county",
+      "sourceUrl": "https://socalvegfest.org/"
+    },
+    {
+      "sourceId": "vegan-street-fair",
+      "name": "Vegan Street Fair",
+      "type": "org",
+      "description": "Los Angeles based producer of free-entry vegan food festivals, including its Los Angeles street fair, that also runs events in other cities.",
+      "website": "https://www.veganstreetfair.com/",
+      "socials": {
+        "instagram": "veganstreetfair",
+        "facebook": "veganstreetfair",
+        "tiktok": "veganstreetfair",
+        "youtube": "channel/UC8wXK_26C2sXjxrKlztVuFQ"
+      },
+      "area": "sfv",
+      "sourceUrl": "https://www.veganstreetfair.com/losangeles"
+    },
+    {
+      "sourceId": "animal-protection-and-rescue-league",
+      "name": "Animal Protection and Rescue League",
+      "type": "org",
+      "description": "Volunteer-run animal rights nonprofit based in San Diego and Orange counties.",
+      "website": "https://www.aprl.org/",
+      "socials": {
+        "facebook": "aprl.org"
+      },
+      "area": "san_diego",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Animal_Protection_and_Rescue_League"
+    },
+    {
+      "sourceId": "vegan-in-san-diego",
+      "name": "Vegan in San Diego",
+      "type": "org",
+      "description": "San Diego County nonprofit dedicated to making veganism more accessible that publishes local vegan event listings and runs a recurring night market.",
+      "website": "https://veganinsandiego.com/",
+      "socials": {
+        "facebook": "veganinsandiego",
+        "youtube": "channel/UC9Wk1JrTOJm2P56Gv8TEVIg"
+      },
+      "area": "san_diego",
+      "sourceUrl": "https://veganinsandiego.com/events/"
     }
   ]
 }

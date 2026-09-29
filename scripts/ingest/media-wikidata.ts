@@ -1,39 +1,52 @@
 /**
- * Ingest films and documentaries about veganism and animals from Wikidata
- * and POST them to `/api/ingest/media` as `source: wikidata`.
+ * Ingest films and documentaries about veganism and animals: a curated seed
+ * list first, then Wikidata discovery as a supplement. Both POST to
+ * `/api/ingest/media`, and both are cached for `ingest:media:tmdb`.
  *
- *   npm run ingest:media:wikidata -- --dry-run   # query, map, print counts
- *   npm run ingest:media:wikidata                # POST with INGEST_KEY to API_URL
+ *   npm run ingest:media:wikidata -- --dry-run            # query, map, print counts
+ *   npm run ingest:media:wikidata                         # POST with INGEST_KEY to API_URL
+ *   npm run ingest:media:wikidata -- --seed other.json    # a different seed file
  *
- * One SPARQL query against query.wikidata.org (descriptive User-Agent, as
- * their policy asks): items whose main subject (P921) is veganism (Q181138),
- * animal rights (Q426), intensive animal farming (Q912362) or animal welfare
- * (Q459426), plus the closely related subjects the well-known films are
- * actually filed under on Wikidata: cruelty to animals (Q40053), speciesism
- * (Q203986) and plant-based diet (Q7201457). Without that second tier the
- * query misses Earthlings, Dominion and Cowspiracy. Items must be a film,
- * documentary film, short film, television film or television series.
+ * Seed: scripts/data/media-seed.json, entries `{ title, year?, kind?,
+ * wikidata?, tmdb?, imdb? }`, ingested as-is under source `curated` with
+ * the title (and year) as `sourceId`; entries with a Q-id get their missing
+ * IMDb and TMDB ids looked up on Wikidata. Wikidata's main-subject (P921)
+ * coverage of this topic is thin (a dozen titles), so the seed is the
+ * primary path and discovery fills in what the seed does not name.
+ *
+ * Discovery: one SPARQL query against query.wikidata.org (descriptive
+ * User-Agent, as their policy asks) for items whose main subject is veganism
+ * (Q181138), animal rights (Q426), intensive animal farming (Q912362) or
+ * animal welfare (Q459426), plus the adjacent subjects well-known films are
+ * filed under: cruelty to animals (Q40053), speciesism (Q203986) and
+ * plant-based diet (Q7201457). Items must be a film, documentary film, short
+ * film, television film or television series. A discovered Q-id that the
+ * seed already names is skipped so the film has one row.
  *
  * `kind` is `documentary` when the genre (P136) or class is documentary film
  * (Q93204), `short` for short films, `series` for television series, else
  * `film`. `year` is the earliest publication date. `externalIds` carries the
- * Q-id, IMDb (P345) and TMDB (P4947) ids so `ingest:media:tmdb` can enrich
- * the same rows. The mapped items are also written to
- * scripts/data/generated/media-wikidata.json (git-ignored) for that script.
+ * Q-id, IMDb (P345) and TMDB (P4947) ids. Both batches are written to
+ * scripts/data/generated/media-wikidata.json (git-ignored) for the TMDB step.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { MediaItemInput } from '../../src/services/ingest.js';
 import {
+  addTotals,
+  argValue,
   dataPath,
+  emptyTotals,
   INGEST_USER_AGENT,
   isMain,
   postIngest,
+  readJson,
   runScript,
   scriptContext,
 } from './lib/client.js';
 
 export const WIKIDATA_SOURCE = 'wikidata';
+export const CURATED_SOURCE = 'curated';
 export const SPARQL_ENDPOINT = 'https://query.wikidata.org/sparql';
 
 /** Subject Q-ids and the tag each one contributes. */
@@ -55,14 +68,12 @@ const CLASSES: Record<string, MediaItemInput['kind']> = {
   Q5398426: 'series',
 };
 
+const values = (ids: string[]) => ids.map((q) => `wd:${q}`).join(' ');
+
 export const SPARQL = `
 SELECT ?item ?itemLabel ?subject ?cls ?date ?imdb ?tmdb ?doc WHERE {
-  VALUES ?subject { ${Object.keys(SUBJECTS)
-    .map((q) => `wd:${q}`)
-    .join(' ')} }
-  VALUES ?cls { ${Object.keys(CLASSES)
-    .map((q) => `wd:${q}`)
-    .join(' ')} }
+  VALUES ?subject { ${values(Object.keys(SUBJECTS))} }
+  VALUES ?cls { ${values(Object.keys(CLASSES))} }
   ?item wdt:P921 ?subject .
   ?item wdt:P31 ?cls .
   OPTIONAL { ?item wdt:P577 ?date . }
@@ -72,11 +83,23 @@ SELECT ?item ?itemLabel ?subject ?cls ?date ?imdb ?tmdb ?doc WHERE {
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }`;
 
+/** IMDb, TMDB, year and the documentary flag for the seed entries that name a Q-id. */
+export const idLookupSparql = (qids: string[]) => `
+SELECT ?item ?imdb ?tmdb ?date ?doc WHERE {
+  VALUES ?item { ${values(qids)} }
+  OPTIONAL { ?item wdt:P345 ?imdb . }
+  OPTIONAL { ?item wdt:P4947 ?tmdb . }
+  OPTIONAL { ?item wdt:P577 ?date . }
+  OPTIONAL { ?item wdt:P136 wd:Q93204 . BIND(true AS ?doc) }
+}`;
+
 interface Binding {
   [key: string]: { value: string } | undefined;
 }
 
 const qid = (uri: string) => uri.slice(uri.lastIndexOf('/') + 1);
+const IMDB_RE = /^tt\d+$/;
+const TMDB_RE = /^\d+$/;
 
 type Draft = MediaItemInput & { tags: string[]; externalIds: Record<string, string> };
 
@@ -103,8 +126,8 @@ function applyRow(draft: Draft, row: Binding, cls: MediaItemInput['kind'] | unde
   }
   const subjectTag = row.subject ? SUBJECTS[qid(row.subject.value)] : undefined;
   if (subjectTag && !draft.tags.includes(subjectTag)) draft.tags.push(subjectTag);
-  if (row.imdb?.value && /^tt\d+$/.test(row.imdb.value)) draft.externalIds.imdb = row.imdb.value;
-  if (row.tmdb?.value && /^\d+$/.test(row.tmdb.value)) draft.externalIds.tmdb = row.tmdb.value;
+  if (row.imdb?.value && IMDB_RE.test(row.imdb.value)) draft.externalIds.imdb = row.imdb.value;
+  if (row.tmdb?.value && TMDB_RE.test(row.tmdb.value)) draft.externalIds.tmdb = row.tmdb.value;
 }
 
 /** Collapse the one-row-per-value bindings into one item per Q-id. Exported for the tests. */
@@ -124,8 +147,50 @@ export function bindingsToMediaItems(bindings: Binding[]): MediaItemInput[] {
   return Array.from(byId.values()).sort((a, b) => a.title.localeCompare(b.title));
 }
 
-export async function queryWikidata(): Promise<Binding[]> {
-  const url = `${SPARQL_ENDPOINT}?format=json&query=${encodeURIComponent(SPARQL)}`;
+export interface SeedEntry {
+  title: string;
+  year?: number;
+  kind?: MediaItemInput['kind'];
+  wikidata?: string;
+  tmdb?: string | number;
+  imdb?: string;
+  tags?: string[];
+}
+
+const slugish = (text: string) =>
+  text
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+/** Seed entries as curated media items, ids as given. Exported for the tests. */
+export function seedToMediaItems(entries: SeedEntry[]): MediaItemInput[] {
+  return entries
+    .filter((e) => typeof e.title === 'string' && e.title.trim())
+    .map((e) => {
+      const externalIds: Record<string, string> = {};
+      if (e.wikidata && /^Q\d+$/.test(e.wikidata)) externalIds.wikidata = e.wikidata;
+      if (e.tmdb !== undefined && TMDB_RE.test(String(e.tmdb))) externalIds.tmdb = String(e.tmdb);
+      if (e.imdb && IMDB_RE.test(e.imdb)) externalIds.imdb = e.imdb;
+      const title = e.title.trim().slice(0, 160);
+      return {
+        sourceId: e.year ? `${slugish(title)}-${e.year}` : slugish(title),
+        title,
+        kind: e.kind ?? 'documentary',
+        year: e.year,
+        tags: Array.from(new Set(['curated', ...(e.tags ?? [])])),
+        externalIds: Object.keys(externalIds).length > 0 ? externalIds : undefined,
+        sourceUrl: externalIds.wikidata
+          ? `https://www.wikidata.org/wiki/${externalIds.wikidata}`
+          : undefined,
+      };
+    });
+}
+
+async function sparql(query: string): Promise<Binding[]> {
+  const url = `${SPARQL_ENDPOINT}?format=json&query=${encodeURIComponent(query)}`;
   const res = await fetch(url, {
     headers: { 'User-Agent': INGEST_USER_AGENT, Accept: 'application/sparql-results+json' },
     signal: AbortSignal.timeout(120_000),
@@ -135,26 +200,69 @@ export async function queryWikidata(): Promise<Binding[]> {
   return body.results?.bindings ?? [];
 }
 
+/** Fill missing IMDb/TMDB ids, year and documentary flag on seed items that name a Q-id. */
+async function enrichSeedFromWikidata(items: MediaItemInput[]): Promise<void> {
+  const byId = new Map<string, MediaItemInput>();
+  for (const item of items) {
+    if (item.externalIds?.wikidata) byId.set(item.externalIds.wikidata, item);
+  }
+  if (byId.size === 0) return;
+  for (const row of await sparql(idLookupSparql(Array.from(byId.keys())))) {
+    const item = row.item ? byId.get(qid(row.item.value)) : undefined;
+    if (!item) continue;
+    const ids = item.externalIds as Record<string, string>;
+    if (!ids.imdb && row.imdb?.value && IMDB_RE.test(row.imdb.value)) ids.imdb = row.imdb.value;
+    if (!ids.tmdb && row.tmdb?.value && TMDB_RE.test(row.tmdb.value)) ids.tmdb = row.tmdb.value;
+    const year = row.date ? Number(row.date.value.slice(0, 4)) : Number.NaN;
+    if (!item.year && Number.isFinite(year) && year >= 1900) item.year = year;
+    if (row.doc?.value === 'true') item.kind = 'documentary';
+  }
+}
+
+export interface MediaCache {
+  batches: Array<{ source: string; items: MediaItemInput[] }>;
+}
+
 async function main(): Promise<void> {
   const ctx = scriptContext();
-  const bindings = await queryWikidata();
-  const items = bindingsToMediaItems(bindings);
+  const seedFile = dataPath(argValue(ctx.args, 'seed') ?? 'media-seed.json');
+  const seed = existsSync(seedFile) ? seedToMediaItems(readJson<SeedEntry[]>(seedFile)) : [];
+  await enrichSeedFromWikidata(seed);
+  const seeded = new Set(seed.map((i) => i.externalIds?.wikidata).filter(Boolean));
+
+  const bindings = await sparql(SPARQL);
+  const discovered = bindingsToMediaItems(bindings).filter(
+    (i) => !seeded.has(i.externalIds?.wikidata),
+  );
+  const all = [...seed, ...discovered];
   ctx.logger.info(
     {
+      seed: seed.length,
       rows: bindings.length,
-      items: items.length,
-      documentaries: items.filter((i) => i.kind === 'documentary').length,
-      withTmdb: items.filter((i) => i.externalIds?.tmdb).length,
+      discovered: discovered.length,
+      documentaries: all.filter((i) => i.kind === 'documentary').length,
+      withTmdb: all.filter((i) => i.externalIds?.tmdb).length,
     },
     'mapped',
   );
 
-  const cache = dataPath(path.join('generated', 'media-wikidata.json'));
-  mkdirSync(path.dirname(cache), { recursive: true });
-  writeFileSync(cache, `${JSON.stringify({ source: WIKIDATA_SOURCE, items }, null, 2)}\n`);
-  ctx.logger.info({ cache }, 'wrote cache for ingest:media:tmdb');
+  const cache: MediaCache = {
+    batches: [
+      { source: CURATED_SOURCE, items: seed },
+      { source: WIKIDATA_SOURCE, items: discovered },
+    ],
+  };
+  const cachePath = dataPath(path.join('generated', 'media-wikidata.json'));
+  mkdirSync(path.dirname(cachePath), { recursive: true });
+  writeFileSync(cachePath, `${JSON.stringify(cache, null, 2)}\n`);
+  ctx.logger.info({ cache: cachePath }, 'wrote cache for ingest:media:tmdb');
 
-  await postIngest(ctx, 'media', WIKIDATA_SOURCE, items);
+  const totals = emptyTotals();
+  for (const batch of cache.batches) {
+    if (batch.items.length === 0) continue;
+    addTotals(totals, await postIngest(ctx, 'media', batch.source, batch.items));
+  }
+  ctx.logger.info(totals, 'done');
 }
 
 if (isMain(import.meta.url)) runScript(main);

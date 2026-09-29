@@ -1,8 +1,10 @@
 /**
- * Seed curated sanctuaries from scripts/data/sanctuaries.json.
+ * Seed curated places (sanctuaries by default) from a hand-checked JSON file.
  *
- *   npm run seed:sanctuaries              # upsert by slug as approved
+ *   npm run seed:sanctuaries              # scripts/data/sanctuaries.json, type sanctuary
  *   npm run seed:sanctuaries -- --dry-run # print what would be written
+ *   npm run seed:gardens:curated          # scripts/data/gardens-curated.json, type garden
+ *   tsx scripts/seed-sanctuaries.ts --input other.json --type garden
  *
  * Curated rows are approved on insert: each entry was checked by hand against
  * the sanctuary's own site before it went into the JSON. Re-running refreshes
@@ -33,19 +35,27 @@ interface CuratedSanctuary {
 async function main(): Promise<void> {
   loadDotenv({ quiet: true });
   const dryRun = process.argv.includes('--dry-run');
+  const argValue = (name: string): string | undefined => {
+    const i = process.argv.indexOf(`--${name}`);
+    return i >= 0 ? process.argv[i + 1] : undefined;
+  };
+  const inputFile = argValue('input') ?? 'sanctuaries.json';
+  const placeType = (argValue('type') ?? 'sanctuary') as 'sanctuary' | 'garden';
+  if (placeType !== 'sanctuary' && placeType !== 'garden') {
+    throw new Error(`--type must be sanctuary or garden, got ${placeType}`);
+  }
   const env = loadEnv(
     dryRun
       ? { ...process.env, MONGODB_URI: process.env.MONGODB_URI ?? 'mongodb://dry-run' }
       : process.env,
   );
   const logger = createLogger({ NODE_ENV: env.NODE_ENV, LOG_LEVEL: 'info' });
-  const dataPath = path.join(
-    path.dirname(fileURLToPath(import.meta.url)),
-    'data',
-    'sanctuaries.json',
-  );
+  const dataPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'data', inputFile);
   const rows = JSON.parse(readFileSync(dataPath, 'utf8')) as CuratedSanctuary[];
-  logger.info({ count: rows.length, names: rows.map((r) => r.name) }, 'curated sanctuaries');
+  logger.info(
+    { file: inputFile, type: placeType, count: rows.length, names: rows.map((r) => r.name) },
+    'curated places',
+  );
   if (dryRun) {
     logger.info('dry run: nothing written');
     return;
@@ -59,8 +69,11 @@ async function main(): Promise<void> {
         update: {
           $set: {
             name: r.name,
-            type: 'sanctuary' as const,
+            type: placeType,
             veganLevel: 'full' as const,
+            source: 'curated' as const,
+            sourceId: slugify(r.name),
+            lastSeenAt: new Date(),
             location: { type: 'Point' as const, coordinates: [r.lng, r.lat] as [number, number] },
             address: r.address,
             city: r.city,
@@ -72,7 +85,7 @@ async function main(): Promise<void> {
           $setOnInsert: {
             slug: slugify(r.name),
             approvalStatus: 'approved' as const,
-            source: 'curated' as const,
+            adminEdited: [] as string[],
             photoKeys: [] as string[],
             ratingAvg: 0,
             reviewCount: 0,

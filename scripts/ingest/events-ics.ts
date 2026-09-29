@@ -49,6 +49,8 @@ export interface EventSource {
   ics?: string;
   url?: string;
   placeholder?: string;
+  /** Regex (as a string) for same-origin detail links on the list page that carry the Event JSON-LD. */
+  detailLinkPattern?: string;
 }
 
 function icalTimeToIso(time: ICAL.Time): string | null {

@@ -1,11 +1,33 @@
 import { type HydratedDocument, type InferSchemaType, model, Schema } from 'mongoose';
-import { MEDIA_KINDS, PUBLISH_STATUSES } from './enums.js';
+import { MEDIA_ACTION_TYPES, MEDIA_KINDS, PUBLISH_STATUSES, WATCH_ACCESS } from './enums.js';
 import { provenanceFields, provenanceIndex } from './provenance.js';
 
 const watchLinkSchema = new Schema(
   {
     provider: { type: String, required: true, maxlength: 60 },
     url: { type: String, required: true },
+    access: { type: String, enum: WATCH_ACCESS, default: 'unknown' },
+  },
+  { _id: false },
+);
+
+/** A way to act after watching: petition, donation, pledge, volunteering, a guide. */
+const mediaActionSchema = new Schema(
+  {
+    label: { type: String, required: true, trim: true, maxlength: 80 },
+    url: { type: String, required: true },
+    type: { type: String, enum: MEDIA_ACTION_TYPES, required: true },
+    org: { type: String, trim: true, maxlength: 120 },
+  },
+  { _id: false },
+);
+
+/** Public counters. Who saved or reacted is in the private collections, never here. */
+const mediaStatsSchema = new Schema(
+  {
+    saves: { type: Number, default: 0, min: 0 },
+    moved: { type: Number, default: 0, min: 0 },
+    acted: { type: Number, default: 0, min: 0 },
   },
   { _id: false },
 );
@@ -43,7 +65,11 @@ const mediaItemSchema = new Schema(
     originalLanguage: { type: String, maxlength: 8 },
     watchLinks: { type: [watchLinkSchema], default: [] },
     trailerYoutubeId: { type: String, match: /^[A-Za-z0-9_-]{6,20}$/ },
+    officialSite: { type: String },
     tags: { type: [String], default: [] },
+    contentWarnings: { type: [String], default: [] },
+    actions: { type: [mediaActionSchema], default: [] },
+    stats: { type: mediaStatsSchema, default: () => ({}) },
     externalIds: { type: externalIdsSchema },
     featured: { type: Boolean, default: false },
     status: { type: String, enum: PUBLISH_STATUSES, required: true, default: 'draft' },
@@ -55,6 +81,10 @@ const mediaItemSchema = new Schema(
 mediaItemSchema.index({ slug: 1 }, { unique: true });
 mediaItemSchema.index({ status: 1, kind: 1, _id: -1 });
 mediaItemSchema.index({ status: 1, tags: 1 });
+mediaItemSchema.index({ status: 1, genres: 1 });
+mediaItemSchema.index({ status: 1, featured: -1, _id: -1 });
+mediaItemSchema.index({ status: 1, year: -1, _id: -1 });
+mediaItemSchema.index({ status: 1, 'watchLinks.access': 1 });
 mediaItemSchema.index({ status: 1, featured: -1, _id: -1 });
 provenanceIndex(mediaItemSchema);
 

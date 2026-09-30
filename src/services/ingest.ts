@@ -13,6 +13,7 @@ import {
   HOME_AREAS,
   type HomeArea,
   type IngestResource,
+  MEDIA_ACTION_TYPES,
   MEDIA_KINDS,
   MediaItemModel,
   ORGANIZATION_TYPES,
@@ -21,6 +22,7 @@ import {
   PlaceModel,
   Types,
   VEGAN_LEVELS,
+  WATCH_ACCESS,
 } from '../models/index.js';
 
 /**
@@ -138,8 +140,31 @@ export const mediaItemSchema = z
       .regex(/^[a-z]{2,3}(-[A-Za-z]{2,4})?$/)
       .optional(),
     watchLinks: z
-      .array(z.object({ provider: z.string().trim().min(1).max(60), url: urlSchema }).strict())
+      .array(
+        z
+          .object({
+            provider: z.string().trim().min(1).max(60),
+            url: urlSchema,
+            access: z.enum(WATCH_ACCESS).optional(),
+          })
+          .strict(),
+      )
       .max(20)
+      .optional(),
+    officialSite: urlSchema.optional(),
+    contentWarnings: z.array(z.string().trim().min(1).max(60)).max(10).optional(),
+    actions: z
+      .array(
+        z
+          .object({
+            label: z.string().trim().min(1).max(80),
+            url: urlSchema,
+            type: z.enum(MEDIA_ACTION_TYPES),
+            org: z.string().trim().min(1).max(120).optional(),
+          })
+          .strict(),
+      )
+      .max(10)
       .optional(),
     trailerYoutubeId: z
       .string()
@@ -618,8 +643,11 @@ function prepareMedia(item: MediaItemInput): PreparedRow {
       ratingCount: item.ratingCount,
       contentRating: item.contentRating,
       originalLanguage: item.originalLanguage,
-      watchLinks: item.watchLinks,
+      watchLinks: item.watchLinks?.map((w) => ({ ...w, access: w.access ?? 'unknown' })),
       trailerYoutubeId: item.trailerYoutubeId,
+      officialSite: item.officialSite,
+      contentWarnings: item.contentWarnings,
+      actions: item.actions,
       tags: item.tags,
       externalIds: item.externalIds ? compact(item.externalIds) : undefined,
       sourceUrl: item.sourceUrl,

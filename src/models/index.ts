@@ -11,7 +11,9 @@ import { GroveModel } from './grove.js';
 import { GroveMemberModel } from './groveMember.js';
 import { GuideModel } from './guide.js';
 import { MagicLinkModel } from './magicLink.js';
+import { MediaCollectionModel } from './mediaCollection.js';
 import { MediaItemModel } from './mediaItem.js';
+import { MediaReactionModel } from './mediaReaction.js';
 import { MessageModel } from './message.js';
 import { NotificationPreferencesModel } from './notificationPreferences.js';
 import { OrganizationModel } from './organization.js';
@@ -22,6 +24,7 @@ import { PostModel } from './post.js';
 import { PushTokenModel } from './pushToken.js';
 import { ReactionModel } from './reaction.js';
 import { ReportModel } from './report.js';
+import { SavedMediaModel } from './savedMedia.js';
 import { SavedPostModel } from './savedPost.js';
 import { ScheduledNotificationModel } from './scheduledNotification.js';
 import { SessionModel } from './session.js';
@@ -41,7 +44,9 @@ export * from './grove.js';
 export * from './groveMember.js';
 export * from './guide.js';
 export * from './magicLink.js';
+export * from './mediaCollection.js';
 export * from './mediaItem.js';
+export * from './mediaReaction.js';
 export * from './message.js';
 export * from './notificationPreferences.js';
 export * from './organization.js';
@@ -52,6 +57,7 @@ export * from './post.js';
 export * from './pushToken.js';
 export * from './reaction.js';
 export * from './report.js';
+export * from './savedMedia.js';
 export * from './savedPost.js';
 export * from './scheduledNotification.js';
 export * from './session.js';
@@ -72,7 +78,9 @@ export const allModels = [
   GroveMemberModel,
   GuideModel,
   MagicLinkModel,
+  MediaCollectionModel,
   MediaItemModel,
+  MediaReactionModel,
   MessageModel,
   NotificationPreferencesModel,
   OrganizationModel,
@@ -83,6 +91,7 @@ export const allModels = [
   PushTokenModel,
   ReactionModel,
   ReportModel,
+  SavedMediaModel,
   SavedPostModel,
   ScheduledNotificationModel,
   SessionModel,

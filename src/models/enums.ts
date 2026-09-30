@@ -80,6 +80,28 @@ export const REPORT_STATUSES = ['open', 'reviewing', 'resolved', 'dismissed'] as
 export const MESSAGE_TYPES = ['text', 'shared'] as const;
 
 export const MEDIA_KINDS = ['documentary', 'film', 'series', 'talk', 'short'] as const;
+export type MediaKind = (typeof MEDIA_KINDS)[number];
+/** "This moved me" and "I took action": the two low-friction reactions on a title. */
+export const MEDIA_REACTION_TYPES = ['moved', 'acted'] as const;
+export type MediaReactionType = (typeof MEDIA_REACTION_TYPES)[number];
+export const WATCH_ACCESS = ['free', 'subscription', 'rent', 'buy', 'unknown'] as const;
+export type WatchAccess = (typeof WATCH_ACCESS)[number];
+export const MEDIA_ACTION_TYPES = [
+  'petition',
+  'donate',
+  'pledge',
+  'volunteer',
+  'guide',
+  'learn',
+] as const;
+/** The topic vocabulary that drives the automatic home rows. Free tags are allowed beside these. */
+export const MEDIA_TOPIC_TAGS = [
+  'ethics',
+  'health',
+  'environment',
+  'activism',
+  'investigation',
+] as const;
 export const PUBLISH_STATUSES = ['draft', 'published'] as const;
 export const GUIDE_CATEGORIES = [
   'outreach',

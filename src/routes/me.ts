@@ -2,11 +2,12 @@ import { Router } from 'express';
 import { z } from 'zod';
 import type { AppDeps } from '../lib/deps.js';
 import { notFound, notImplemented } from '../lib/errors.js';
-import { handleSchema, idParams } from '../lib/schemas.js';
+import { handleSchema, idParams, paginationQuery } from '../lib/schemas.js';
 import { currentSession, currentUser, requireAuth } from '../middleware/auth.js';
 import { getValidated, validate } from '../middleware/validate.js';
 import { HOME_AREAS } from '../models/index.js';
 import { assertHandleAvailable, deleteAccount, toPrivateUser } from '../services/auth.js';
+import { listWatchlist } from '../services/media.js';
 import { listSessions, revokeSession } from '../services/sessions.js';
 
 // `.strict()` so email, role and providers cannot be smuggled in through PATCH.
@@ -82,6 +83,15 @@ export function meRouter(deps: AppDeps): Router {
   });
 
   // TODO(m2): notification preferences read/upsert.
+  // The watchlist is a saved list, never a history (spec section 10).
+  router.get('/watchlist', validate({ query: paginationQuery }), async (req, res) => {
+    const { query } = getValidated<{ query: z.infer<typeof paginationQuery> }>(req);
+    res.set('Cache-Control', 'private, no-store');
+    res.json(
+      await listWatchlist(currentUser(req)._id, query, { cdnOrigin: deps.env.MEDIA_CDN_ORIGIN }),
+    );
+  });
+
   router.get('/notification-preferences', notImplemented);
   router.put(
     '/notification-preferences',

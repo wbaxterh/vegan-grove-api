@@ -4,49 +4,133 @@
     "year": 2005,
     "wikidata": "Q1277684",
     "imdb": "tt0358456",
-    "tmdb": 30238
+    "tmdb": 30238,
+    "tags": ["ethics", "investigation"],
+    "contentWarnings": ["graphic footage of animal suffering"],
+    "officialSite": "https://www.nationearth.com/",
+    "watchLinks": [
+      {
+        "provider": "Nation Earth (official)",
+        "url": "https://www.nationearth.com/",
+        "access": "free"
+      }
+    ],
+    "actions": [
+      {
+        "label": "Support Mercy For Animals",
+        "url": "https://mercyforanimals.org/",
+        "type": "donate",
+        "org": "Mercy For Animals"
+      }
+    ],
+    "featured": true
   },
   {
     "title": "Cowspiracy: The Sustainability Secret",
     "year": 2014,
     "wikidata": "Q18206270",
     "imdb": "tt3302820",
-    "tmdb": 282297
+    "tmdb": 282297,
+    "tags": ["environment"],
+    "contentWarnings": ["footage of animal death"],
+    "officialSite": "https://www.cowspiracy.com/",
+    "actions": [
+      {
+        "label": "Endorse the Plant Based Treaty",
+        "url": "https://plantbasedtreaty.org/",
+        "type": "pledge",
+        "org": "Plant Based Treaty"
+      }
+    ],
+    "featured": true
   },
   {
     "title": "What the Health",
     "year": 2017,
     "wikidata": "Q24686978",
     "imdb": "tt5541848",
-    "tmdb": 415086
+    "tmdb": 415086,
+    "tags": ["health"],
+    "officialSite": "https://www.whatthehealthfilm.com/",
+    "actions": [
+      {
+        "label": "Try Veganuary",
+        "url": "https://veganuary.com/",
+        "type": "pledge",
+        "org": "Veganuary"
+      }
+    ]
   },
   {
     "title": "The Game Changers",
     "year": 2018,
     "wikidata": "Q51533554",
     "imdb": "tt7455754",
-    "tmdb": 463088
+    "tmdb": 463088,
+    "tags": ["health"],
+    "officialSite": "https://gamechangersmovie.com/",
+    "actions": [
+      {
+        "label": "Try Veganuary",
+        "url": "https://veganuary.com/",
+        "type": "pledge",
+        "org": "Veganuary"
+      }
+    ],
+    "featured": true
   },
   {
     "title": "Seaspiracy",
     "year": 2021,
     "wikidata": "Q106159613",
     "imdb": "tt14152756",
-    "tmdb": 801058
+    "tmdb": 801058,
+    "tags": ["environment", "investigation"],
+    "contentWarnings": ["footage of animal death"],
+    "officialSite": "https://www.seaspiracy.org/",
+    "actions": [
+      {
+        "label": "Support Sea Shepherd",
+        "url": "https://www.seashepherdglobal.org/",
+        "type": "donate",
+        "org": "Sea Shepherd"
+      }
+    ],
+    "featured": true
   },
   {
     "title": "Forks over Knives",
     "year": 2011,
     "wikidata": "Q5469844",
     "imdb": "tt1567233",
-    "tmdb": 64288
+    "tmdb": 64288,
+    "tags": ["health"],
+    "officialSite": "https://www.forksoverknives.com/",
+    "actions": [
+      {
+        "label": "Try Veganuary",
+        "url": "https://veganuary.com/",
+        "type": "pledge",
+        "org": "Veganuary"
+      }
+    ]
   },
   {
     "title": "Eating Animals",
     "year": 2017,
     "wikidata": "Q65422409",
     "imdb": "tt2180351",
-    "tmdb": 503150
+    "tmdb": 503150,
+    "tags": ["ethics", "environment"],
+    "contentWarnings": ["graphic footage of animal suffering"],
+    "actions": [
+      {
+        "label": "Support Farm Sanctuary",
+        "url": "https://www.farmsanctuary.org/",
+        "type": "donate",
+        "org": "Farm Sanctuary"
+      }
+    ]
   },
   {
     "title": "Okja",
@@ -54,115 +138,304 @@
     "wikidata": "Q23932553",
     "imdb": "tt3967856",
     "tmdb": 387426,
-    "kind": "film"
+    "kind": "film",
+    "tags": ["ethics"],
+    "actions": [
+      {
+        "label": "Visit a farm sanctuary",
+        "url": "https://www.farmsanctuary.org/the-sanctuaries/los-angeles-ca/",
+        "type": "volunteer",
+        "org": "Farm Sanctuary"
+      }
+    ]
   },
   {
     "title": "Vegucated",
     "year": 2011,
     "wikidata": "Q4401627",
     "imdb": "tt1814930",
-    "tmdb": 76127
+    "tmdb": 76127,
+    "tags": ["ethics", "health"],
+    "officialSite": "https://www.getvegucated.com/",
+    "actions": [
+      {
+        "label": "Try Veganuary",
+        "url": "https://veganuary.com/",
+        "type": "pledge",
+        "org": "Veganuary"
+      }
+    ]
   },
   {
     "title": "Speciesism: The Movie",
     "year": 2013,
     "wikidata": "Q7574973",
     "imdb": "tt2359814",
-    "tmdb": 234555
+    "tmdb": 234555,
+    "tags": ["ethics"],
+    "officialSite": "https://speciesismthemovie.com/",
+    "actions": [
+      {
+        "label": "Join a Cube of Truth",
+        "url": "https://www.anonymousforthevoiceless.org/",
+        "type": "volunteer",
+        "org": "Anonymous for the Voiceless"
+      }
+    ]
   },
   {
     "title": "Blackfish",
     "year": 2013,
     "wikidata": "Q4922844",
     "imdb": "tt2545118",
-    "tmdb": 158999
+    "tmdb": 158999,
+    "tags": ["ethics", "investigation"],
+    "contentWarnings": ["footage of animal death"],
+    "actions": [
+      {
+        "label": "Support the Dolphin Project",
+        "url": "https://www.dolphinproject.com/",
+        "type": "donate",
+        "org": "Dolphin Project"
+      }
+    ]
   },
   {
     "title": "The Cove",
     "year": 2009,
     "wikidata": "Q1211833",
     "imdb": "tt1313104",
-    "tmdb": 23128
+    "tmdb": 23128,
+    "tags": ["ethics", "investigation", "environment"],
+    "contentWarnings": ["footage of animal death"],
+    "actions": [
+      {
+        "label": "Support the Dolphin Project",
+        "url": "https://www.dolphinproject.com/",
+        "type": "donate",
+        "org": "Dolphin Project"
+      }
+    ]
   },
   {
     "title": "Land of Hope and Glory",
     "year": 2017,
     "wikidata": "Q105299158",
     "imdb": "tt7214598",
-    "tmdb": 469116
+    "tmdb": 469116,
+    "tags": ["ethics", "investigation"],
+    "contentWarnings": ["graphic footage of animal suffering"],
+    "officialSite": "https://www.landofhopeandglory.org/",
+    "watchLinks": [
+      {
+        "provider": "Surge (official)",
+        "url": "https://www.landofhopeandglory.org/",
+        "access": "free"
+      }
+    ],
+    "actions": [
+      {
+        "label": "Volunteer with Surge",
+        "url": "https://www.surgeactivism.org/",
+        "type": "volunteer",
+        "org": "Surge"
+      }
+    ]
   },
   {
     "title": "Milked",
     "year": 2021,
     "wikidata": "Q141264101",
     "imdb": "tt15567002",
-    "tmdb": 882150
+    "tmdb": 882150,
+    "tags": ["environment", "investigation"],
+    "contentWarnings": ["footage of animal death"],
+    "officialSite": "https://milked.film/",
+    "actions": [
+      {
+        "label": "Endorse the Plant Based Treaty",
+        "url": "https://plantbasedtreaty.org/",
+        "type": "pledge",
+        "org": "Plant Based Treaty"
+      }
+    ]
   },
   {
     "title": "Peaceable Kingdom: The Journey Home",
     "year": 2009,
     "wikidata": "Q7157562",
     "imdb": "tt2301057",
-    "tmdb": 500807
+    "tmdb": 500807,
+    "tags": ["ethics"],
+    "contentWarnings": ["graphic footage of animal suffering"],
+    "officialSite": "https://www.tribeofheart.org/",
+    "actions": [
+      {
+        "label": "Visit a farm sanctuary",
+        "url": "https://www.farmsanctuary.org/the-sanctuaries/los-angeles-ca/",
+        "type": "volunteer",
+        "org": "Farm Sanctuary"
+      }
+    ]
   },
   {
     "title": "Food, Inc.",
     "year": 2008,
     "wikidata": "Q1300148",
     "imdb": "tt1286537",
-    "tmdb": 18570
+    "tmdb": 18570,
+    "tags": ["environment", "health", "investigation"],
+    "contentWarnings": ["footage of animal death"],
+    "actions": [
+      {
+        "label": "Support the Food Empowerment Project",
+        "url": "https://foodispower.org/",
+        "type": "donate",
+        "org": "Food Empowerment Project"
+      }
+    ]
   },
   {
     "title": "Carnage",
     "year": 2017,
     "wikidata": "Q29110284",
     "imdb": "tt6667360",
-    "tmdb": 447758
+    "tmdb": 447758,
+    "tags": ["activism", "ethics"],
+    "actions": [
+      {
+        "label": "Try Veganuary",
+        "url": "https://veganuary.com/",
+        "type": "pledge",
+        "org": "Veganuary"
+      }
+    ]
   },
   {
     "title": "PlantPure Nation",
     "year": 2015,
     "wikidata": "Q124364820",
     "imdb": "tt3699150",
-    "tmdb": 330221
+    "tmdb": 330221,
+    "tags": ["health", "activism"],
+    "officialSite": "https://www.plantpurenation.com/",
+    "actions": [
+      {
+        "label": "Try Veganuary",
+        "url": "https://veganuary.com/",
+        "type": "pledge",
+        "org": "Veganuary"
+      }
+    ]
   },
   {
     "title": "The End of Medicine",
     "year": 2022,
     "wikidata": "Q104802963",
     "imdb": "tt12833038",
-    "tmdb": 933777
+    "tmdb": 933777,
+    "tags": ["health", "environment"],
+    "contentWarnings": ["footage of animal death"],
+    "actions": [
+      {
+        "label": "Endorse the Plant Based Treaty",
+        "url": "https://plantbasedtreaty.org/",
+        "type": "pledge",
+        "org": "Plant Based Treaty"
+      }
+    ]
   },
   {
     "title": "They're Trying To Kill Us",
     "year": 2021,
     "wikidata": "Q110281463",
     "imdb": "tt16224542",
-    "tmdb": 837097
+    "tmdb": 837097,
+    "tags": ["health", "activism"],
+    "actions": [
+      {
+        "label": "Support the Food Empowerment Project",
+        "url": "https://foodispower.org/",
+        "type": "donate",
+        "org": "Food Empowerment Project"
+      }
+    ]
   },
   {
     "title": "Christspiracy",
     "year": 2024,
     "wikidata": "Q124813590",
     "imdb": "tt29630794",
-    "tmdb": 1211087
+    "tmdb": 1211087,
+    "tags": ["ethics", "investigation"],
+    "contentWarnings": ["footage of animal death"],
+    "officialSite": "https://christspiracy.com/",
+    "actions": [
+      {
+        "label": "Join a Cube of Truth",
+        "url": "https://www.anonymousforthevoiceless.org/",
+        "type": "volunteer",
+        "org": "Anonymous for the Voiceless"
+      }
+    ],
+    "featured": true
   },
   {
     "title": "Fowl Play",
     "year": 2009,
-    "wikidata": "Q138504855"
+    "wikidata": "Q138504855",
+    "tags": ["investigation", "ethics"],
+    "contentWarnings": ["graphic footage of animal suffering"],
+    "actions": [
+      {
+        "label": "Support Mercy For Animals",
+        "url": "https://mercyforanimals.org/",
+        "type": "donate",
+        "org": "Mercy For Animals"
+      }
+    ]
   },
   {
     "title": "Glass Walls",
     "year": 2012,
     "wikidata": "Q54829289",
-    "imdb": "tt6698158"
+    "imdb": "tt6698158",
+    "tags": ["investigation", "ethics"],
+    "kind": "short",
+    "contentWarnings": ["graphic footage of animal suffering"],
+    "actions": [
+      {
+        "label": "Take PETA’s vegan pledge",
+        "url": "https://www.peta.org/",
+        "type": "pledge",
+        "org": "PETA"
+      }
+    ]
   },
   {
     "title": "Dominion",
     "year": 2018,
     "wikidata": "Q63927178",
     "imdb": "tt5773402",
-    "tmdb": 472796
+    "tmdb": 472796,
+    "tags": ["ethics", "investigation"],
+    "contentWarnings": ["graphic footage of animal suffering"],
+    "officialSite": "https://www.dominionmovement.com/",
+    "watchLinks": [
+      {
+        "provider": "Dominion Movement (official)",
+        "url": "https://www.dominionmovement.com/watch",
+        "access": "free"
+      }
+    ],
+    "actions": [
+      {
+        "label": "Join a Cube of Truth",
+        "url": "https://www.anonymousforthevoiceless.org/",
+        "type": "volunteer",
+        "org": "Anonymous for the Voiceless"
+      }
+    ],
+    "featured": true
   }
 ]

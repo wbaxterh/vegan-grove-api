@@ -45,6 +45,7 @@ import {
   runScript,
   scriptContext,
 } from './lib/client.js';
+import { type SeedEntry, toItem } from './media-seed.js';
 
 export const WIKIDATA_SOURCE = 'wikidata';
 export const CURATED_SOURCE = 'curated';
@@ -148,51 +149,13 @@ export function bindingsToMediaItems(bindings: Binding[]): MediaItemInput[] {
   return Array.from(byId.values()).sort((a, b) => a.title.localeCompare(b.title));
 }
 
-export interface SeedEntry {
-  title: string;
-  year?: number;
-  kind?: MediaItemInput['kind'];
-  wikidata?: string;
-  tmdb?: string | number;
-  imdb?: string;
-  tags?: string[];
-}
+export type { SeedEntry } from './media-seed.js';
 
-const slugish = (text: string) =>
-  text
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-function seedExternalIds(e: SeedEntry): Record<string, string> | undefined {
-  const ids: Record<string, string> = {};
-  if (e.wikidata && /^Q\d+$/.test(e.wikidata)) ids.wikidata = e.wikidata;
-  if (e.tmdb !== undefined && TMDB_RE.test(String(e.tmdb))) ids.tmdb = String(e.tmdb);
-  if (e.imdb && IMDB_RE.test(e.imdb)) ids.imdb = e.imdb;
-  return Object.keys(ids).length > 0 ? ids : undefined;
-}
-
-/** Seed entries as curated media items, ids as given. Exported for the tests. */
+/** Seed entries as curated media items, through the one mapper the seed script uses. */
 export function seedToMediaItems(entries: SeedEntry[]): MediaItemInput[] {
   return entries
     .filter((e) => typeof e.title === 'string' && e.title.trim())
-    .map((e) => {
-      const externalIds = seedExternalIds(e);
-      const title = e.title.trim().slice(0, 160);
-      return {
-        sourceId: externalIds?.wikidata ?? slugish(title),
-        title,
-        kind: e.kind ?? 'documentary',
-        year: e.year,
-        tags: Array.from(new Set(['curated', ...(e.tags ?? [])])),
-        externalIds,
-        sourceUrl: externalIds?.wikidata
-          ? `https://www.wikidata.org/wiki/${externalIds.wikidata}`
-          : undefined,
-      };
-    });
+    .map((e) => toItem(e) as unknown as MediaItemInput);
 }
 
 async function sparql(query: string): Promise<Binding[]> {

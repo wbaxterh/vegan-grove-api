@@ -12,6 +12,7 @@ import {
 import { isForbiddenHost, RobotsRules } from '../scripts/ingest/lib/http.js';
 import { type SeedEntry, toItem as seedToItem } from '../scripts/ingest/media-seed.js';
 import {
+  mergeWatchLinks,
   movieToFields,
   pickTrailer,
   providersToWatchLinks,
@@ -258,14 +259,37 @@ describe('media mapping', () => {
 
   it('maps every curated seed entry to an item the API schema accepts', () => {
     // The seed file keeps TMDB ids as numbers; the API wants the digit string.
-    const item = seedToItem({ title: 'Earthlings', year: 2005, wikidata: 'Q1277684', tmdb: 30238 });
+    const item = seedToItem({
+      title: 'Earthlings',
+      year: 2005,
+      wikidata: 'Q1277684',
+      tmdb: 30238,
+      tags: ['ethics'],
+      watchLinks: [{ provider: 'Official', url: 'https://example.test/e', access: 'free' }],
+      actions: [{ label: 'Give', url: 'https://example.test/give', type: 'donate' }],
+      featured: true,
+    });
     expect(item.externalIds).toEqual({ wikidata: 'Q1277684', tmdb: '30238' });
     expect(item.kind).toBe('documentary');
-    expect(seedToItem({ title: 'Okja', year: 2017 })).toMatchObject({
-      sourceId: 'okja',
-      kind: 'film',
-      externalIds: {},
-    });
+    expect(item.tags).toEqual(['curated', 'ethics']);
+    expect(item).not.toHaveProperty('featured');
+    expect(mediaItemSchema.safeParse(item).success).toBe(true);
+    // The curated free link survives enrichment and leads the providers.
+    expect(
+      mergeWatchLinks(
+        [{ provider: 'Official', url: 'https://example.test/e', access: 'free' }],
+        [
+          { provider: 'Netflix', url: 'https://jw.example/e' },
+          { provider: 'Official', url: 'https://example.test/e' },
+        ],
+      ),
+    ).toEqual([
+      { provider: 'Official', url: 'https://example.test/e', access: 'free' },
+      { provider: 'Netflix', url: 'https://jw.example/e' },
+    ]);
+    const okja = seedToItem({ title: 'Okja', year: 2017 });
+    expect(okja).toMatchObject({ sourceId: 'okja', kind: 'film', tags: ['curated'] });
+    expect(okja).not.toHaveProperty('externalIds');
 
     const failures = (mediaSeed as SeedEntry[])
       .map((entry) => ({ entry, result: mediaItemSchema.safeParse(seedToItem(entry)) }))

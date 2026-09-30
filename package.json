@@ -34,7 +34,8 @@
     "ingest:media:tmdb": "tsx scripts/ingest/media-tmdb.ts",
     "ingest:guides": "tsx scripts/ingest/guides.ts",
     "seed:gardens:curated": "tsx scripts/seed-sanctuaries.ts --input gardens-curated.json --type garden",
-    "ingest:media:seed": "tsx scripts/ingest/media-seed.ts"
+    "ingest:media:seed": "tsx scripts/ingest/media-seed.ts",
+    "seed:media:collections": "tsx scripts/seed-media-collections.ts"
   },
   "lint-staged": {
     "*.{ts,js,json}": "biome check --write",

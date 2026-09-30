@@ -22,6 +22,7 @@ import {
   scriptContext,
 } from './lib/client.js';
 
+/** One entry of scripts/data/media-seed.json: catalogue ids plus the editorial layer. */
 export interface SeedEntry {
   title: string;
   year?: number;
@@ -30,10 +31,20 @@ export interface SeedEntry {
   /** The seed file stores TMDB ids as numbers; the API wants the digit string. */
   tmdb?: number | string;
   kind?: 'documentary' | 'film' | 'series' | 'talk' | 'short';
+  /** Topic tags (`ethics`, `health`, `environment`, `activism`, `investigation`) plus free tags. */
   tags?: string[];
+  contentWarnings?: string[];
+  officialSite?: string;
+  watchLinks?: Array<{ provider: string; url: string; access?: string }>;
+  actions?: Array<{ label: string; url: string; type: string; org?: string }>;
+  /** Read by seed:media:collections, never sent to the ingest endpoint. */
+  featured?: boolean;
 }
 
 const FEATURE_FILMS = new Set(['Okja']);
+const TMDB_RE = /^\d{1,20}$/;
+const IMDB_RE = /^tt\d{1,18}$/;
+const WIKIDATA_RE = /^Q\d{1,19}$/;
 
 function slugify(text: string): string {
   return text
@@ -43,21 +54,34 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+function compact<T extends Record<string, unknown>>(obj: T): T {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as T;
+}
+
+/** The seed entry as an ingest item. `sourceId` is the Wikidata id, else the slugified title. */
 export function toItem(entry: SeedEntry): Record<string, unknown> {
-  const kind = entry.kind ?? (FEATURE_FILMS.has(entry.title) ? 'film' : 'documentary');
+  const title = entry.title.trim().slice(0, 160);
+  const kind = entry.kind ?? (FEATURE_FILMS.has(title) ? 'film' : 'documentary');
   const externalIds: Record<string, string> = {};
-  if (entry.wikidata) externalIds.wikidata = entry.wikidata;
-  if (entry.imdb) externalIds.imdb = entry.imdb;
-  if (entry.tmdb !== undefined && entry.tmdb !== '') externalIds.tmdb = String(entry.tmdb);
-  return {
-    sourceId: entry.wikidata ?? slugify(entry.title),
-    title: entry.title,
+  if (entry.wikidata && WIKIDATA_RE.test(entry.wikidata)) externalIds.wikidata = entry.wikidata;
+  if (entry.imdb && IMDB_RE.test(entry.imdb)) externalIds.imdb = entry.imdb;
+  if (entry.tmdb !== undefined && TMDB_RE.test(String(entry.tmdb))) {
+    externalIds.tmdb = String(entry.tmdb);
+  }
+  const wikidata = externalIds.wikidata;
+  return compact({
+    sourceId: wikidata ?? slugify(title),
+    title,
     kind,
     year: entry.year,
-    tags: entry.tags ?? ['curated'],
-    externalIds,
-    sourceUrl: entry.wikidata ? `https://www.wikidata.org/wiki/${entry.wikidata}` : undefined,
-  };
+    tags: Array.from(new Set(['curated', ...(entry.tags ?? [])])),
+    contentWarnings: entry.contentWarnings,
+    officialSite: entry.officialSite,
+    watchLinks: entry.watchLinks?.map((w) => ({ ...w, access: w.access ?? 'unknown' })),
+    actions: entry.actions,
+    externalIds: Object.keys(externalIds).length > 0 ? externalIds : undefined,
+    sourceUrl: wikidata ? `https://www.wikidata.org/wiki/${wikidata}` : undefined,
+  });
 }
 
 async function main(): Promise<void> {

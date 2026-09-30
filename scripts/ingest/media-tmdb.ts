@@ -236,6 +236,23 @@ export function movieToFields(movie: TmdbMovie): Partial<MediaItemInput> {
   ) as Partial<MediaItemInput>;
 }
 
+type WatchLinks = NonNullable<MediaItemInput['watchLinks']>;
+
+/** Curated links (an official free stream) stay first; providers follow, never duplicating a URL. */
+export function mergeWatchLinks(
+  curated: WatchLinks | undefined,
+  providers: WatchLinks,
+): WatchLinks {
+  const out: WatchLinks = [...(curated ?? [])];
+  const seen = new Set(out.map((l) => l.url));
+  for (const link of providers) {
+    if (seen.has(link.url)) continue;
+    seen.add(link.url);
+    out.push(link);
+  }
+  return out.slice(0, 20);
+}
+
 export function withAttribution(tags: string[] | undefined): string[] {
   const out = [...(tags ?? [])];
   if (!out.includes('tmdb')) out.push('tmdb');
@@ -275,7 +292,7 @@ async function enrich(
     trailerYoutubeId: item.trailerYoutubeId ?? fields.trailerYoutubeId,
     posterKey: posterKey ?? item.posterKey,
     backdropKey: backdropKey ?? item.backdropKey,
-    watchLinks: links.length > 0 ? links : item.watchLinks,
+    watchLinks: mergeWatchLinks(item.watchLinks, links),
     tags: withAttribution(item.tags),
   };
 }

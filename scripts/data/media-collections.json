@@ -1,0 +1,90 @@
+[
+  {
+    "slug": "start-here",
+    "name": "Start here",
+    "description": "Six films that have changed more minds than any leaflet. Watch one tonight, send one tomorrow.",
+    "order": 1,
+    "titles": [
+      "Dominion",
+      "Earthlings",
+      "Cowspiracy: The Sustainability Secret",
+      "The Game Changers",
+      "Christspiracy",
+      "What the Health"
+    ]
+  },
+  {
+    "slug": "investigations",
+    "name": "Investigations",
+    "description": "Cameras inside the places the industry keeps closed. Most carry a content warning.",
+    "order": 2,
+    "titles": [
+      "Dominion",
+      "Earthlings",
+      "Land of Hope and Glory",
+      "Glass Walls",
+      "Fowl Play",
+      "Blackfish",
+      "The Cove",
+      "Seaspiracy",
+      "Christspiracy"
+    ]
+  },
+  {
+    "slug": "health-and-food",
+    "name": "Health and food",
+    "description": "What a plant-based plate does for a body, from the athletes to the clinics.",
+    "order": 3,
+    "titles": [
+      "What the Health",
+      "Forks over Knives",
+      "The Game Changers",
+      "PlantPure Nation",
+      "The End of Medicine",
+      "They're Trying To Kill Us",
+      "Vegucated"
+    ]
+  },
+  {
+    "slug": "the-planet",
+    "name": "The planet",
+    "description": "Animal agriculture and the climate, the oceans, and the land.",
+    "order": 4,
+    "titles": [
+      "Cowspiracy: The Sustainability Secret",
+      "Seaspiracy",
+      "Milked",
+      "Eating Animals",
+      "Food, Inc.",
+      "The End of Medicine"
+    ]
+  },
+  {
+    "slug": "oceans-and-wildlife",
+    "name": "Oceans and wildlife",
+    "description": "Dolphins, orcas, and the fishing fleets.",
+    "order": 5,
+    "titles": ["Blackfish", "The Cove", "Seaspiracy"]
+  },
+  {
+    "slug": "ethics-and-philosophy",
+    "name": "Ethics and philosophy",
+    "description": "Why we draw the line where we do, and what happens when we move it.",
+    "order": 6,
+    "titles": [
+      "Speciesism: The Movie",
+      "Peaceable Kingdom: The Journey Home",
+      "Christspiracy",
+      "Okja",
+      "Carnage",
+      "Vegucated"
+    ]
+  },
+  {
+    "slug": "activism",
+    "name": "Activism",
+    "description": "People who decided to do something, and how it went.",
+    "order": 7,
+    "titles": ["Carnage", "PlantPure Nation", "They're Trying To Kill Us", "Land of Hope and Glory"]
+  }
+]

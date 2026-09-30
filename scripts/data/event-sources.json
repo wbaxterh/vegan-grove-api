@@ -30,5 +30,158 @@
     "hostName": "The Gentle Barn",
     "url": "https://www.gentlebarn.org/events/",
     "verified": "2026-09-29: no Event JSON-LD and no ICS published; placeholder, yields nothing until they add structured data"
+  },
+  {
+    "source": "jsonld:marthasfarm",
+    "hostName": "Martha's Farm Animal Sanctuary",
+    "url": "https://www.marthasfarmsanctuary.org/sanctuary-events",
+    "detailLinkPattern": "^/sanctuary-events/",
+    "trust": "auto-publish: the sanctuary's own site, venue events",
+    "verified": "2026-09-30: Squarespace. GET /sanctuary-events returned HTTP 200 text/html with only WebSite JSON-LD and three detail links (/sanctuary-events/2026-online-auction, /sanctuary-events/3rd-annual-online-auction, /sanctuary-events/event-four-j67hj). GET /sanctuary-events/3rd-annual-online-auction returned HTTP 200 with \"@type\": \"Event\" (name Martha's Udderly Fabulous Auction, startDate 2025-08-04T08:00:00-0700, endDate, empty location, description); that sample is past, which proves the markup but means the source yields 0 to 3 items depending on what they post. Squarespace robots.txt allows /sanctuary-events for User-agent * and disallows /*?format=ical and /*?format=json (the per-event ICS links must not be used); named AI agents are disallowed, the ingest agent is not named. Tours are booked on /book-a-tour (Givebutter), not listed as events. Scope: Santa Ynez Valley, Santa Barbara County."
+  },
+  {
+    "source": "jsonld:pebbleranch",
+    "hostName": "Pebble Ranch Rescue",
+    "url": "https://www.pebbleranchrescue.org/",
+    "detailLinkPattern": "^/event-details/",
+    "trust": "auto-publish: the rescue's own site, venue events",
+    "verified": "2026-09-30: Wix Events site, same pattern as The Open Barn. The /events page renders its list client-side and contains no /event-details/ hrefs, so the homepage is the list page: GET https://www.pebbleranchrescue.org/ returned HTTP 200 text/html with links to /event-details/get-your-2026-calendar-2, /event-details/shelter-for-the-piggies-2 and /event-details/sip-and-swine-2026. GET /event-details/sip-and-swine-2026 returned HTTP 200 with \"@type\": \"Event\" (name Sip and sWine 2026, startDate 2026-10-28T18:00:00-07:00, Place Trevi Hills Winery, 13010 Muth Valley Rd, Lakeside, CA 92040, USA). Wix robots.txt: User-agent * Allow: /, only *?lightbox= disallowed. Scope: Lakeside, San Diego County (farm animal rescue)."
+  },
+  {
+    "source": "jsonld:ourhonor",
+    "hostName": "Our Honor",
+    "url": "https://www.ourhonor.org/events",
+    "detailLinkPattern": "^/events/",
+    "enabled": false,
+    "placeholder": "Every event on the list page is dated 2021 to 2023; activate by removing this field and enabled: false when the list shows a current event, otherwise the crawl fetches about forty stale detail pages a day for nothing.",
+    "trust": "pending once activated: virtual webinars; confirm they fit the app before adding to TRUSTED_SOURCES",
+    "verified": "2026-09-30: Squarespace. GET /events returned HTTP 200 text/html with LocalBusiness and WebSite JSON-LD, <time datetime> values from 2021-07-14 to 2023-02-01, detail links under /events/<slug>, and Facebook event links (never followed). GET /events/episode-11-chat-with-a-vegan-veterinarian-dr-sy-woon returned HTTP 200 with \"@type\": \"Event\" (name Episode 11: The Ethical Journey of a Veterinary Professional and Animal Advocate, startDate 2023-10-08T19:00:00-0700, no location). robots.txt allows /events for User-agent * and disallows /*?format=ical and /*?format=json (both were skipped, not fetched). Scope: national, mostly virtual webinars. Placeholder for now."
+  },
+  {
+    "source": "tribe:plantbasedtreaty",
+    "kind": "tribe",
+    "hostName": "Plant Based Treaty",
+    "url": "https://plantbasedtreaty.org/wp-json/tribe/events/v1/events",
+    "sourceUrl": "https://plantbasedtreaty.org/events/",
+    "icsFallback": "https://plantbasedtreaty.org/events/?ical=1",
+    "trust": "auto-publish: the organisation's own calendar",
+    "scope": "global (Los Angeles is an endorsing city)",
+    "verified": "2026-09-30: WordPress with The Events Calendar 6.17.5. GET the endpoint with per_page=5&start_date=now returned HTTP 200 application/json { events: [], total: 0, total_pages: 0, rest_url }: valid but empty at research time (the endpoint defaults to events from today for two years). GET /events/?ical=1 returned HTTP 200 text/html with a 0-byte body for the same reason; kept as icsFallback only. Fields: title, description, url, start_date and end_date (local wall clock), timezone, utc_start_date, venue { venue, address, city, stateprovince, zip, geo_lat?, geo_lng? }, status. organizer is never read. robots.txt allows everything but /wp-admin/."
+  },
+  {
+    "source": "mobilize:thehumaneleague",
+    "kind": "mobilize",
+    "hostName": "The Humane League",
+    "organizationId": 26695,
+    "organizationSlug": "thehumaneleague",
+    "sourceUrl": "https://www.mobilize.us/thehumaneleague/",
+    "trust": "auto-publish: visibility PUBLIC and approval_status APPROVED only, region CA or virtual",
+    "scope": "national feed filtered to location.region == CA or is_virtual",
+    "verified": "2026-09-30: the org's /events page embeds https://www.mobilize.us/thehumaneleague/. GET https://api.mobilize.us/v1/events/550184 (an event linked from that page) returned HTTP 200 application/json with sponsor id 26695; GET https://api.mobilize.us/v1/organizations/26695/events?timeslot_start=gte_now&per_page=100 returned HTTP 200 application/json, count 24, next null. Southern California items in the feed: Demand H Mart (CJ group) end cages: Leafleting! (Westminster CA, 2026-10-17, VISIBILITY_EVENT, coordinates present); Los Angeles and Orange County Team Meeting (2026-10-30, virtual, MEETING); Help Hens Across the Globe with Melodi Gulsen (Fullerton, virtual). No API key. robots.txt on api.mobilize.us answers 403 (treated as absent). Rate limits undocumented; one request per run. contact and created_by_volunteer_host are never read. A radius scan found no other animal-rights sponsor on Mobilize near LA or San Diego, so per-organisation feeds are the only useful mode."
+  },
+  {
+    "source": "json:seashepherd",
+    "kind": "json",
+    "mapping": "seashepherd",
+    "hostName": "Sea Shepherd Conservation Society",
+    "url": "https://seashepherd.org/wp-content/uploads/sscs/events.json",
+    "sourceUrl": "https://seashepherd.org/events/",
+    "trust": "auto-publish: the organisation regenerates this file itself; California items only",
+    "scope": "national (occasional Southern California coastal cleanups); an item is kept only when city_label or venue names California",
+    "verified": "2026-09-30: the /events/ page is a custom JS app that fetches this static file; GET returned HTTP 200 application/json with { ok: true, generated: 2026-09-29T20:17:34.000Z, counts { upcoming: 6, past: 8 }, upcoming: [...], past: [...] }. Each upcoming item: id, type (benefit | meetup | cleanup), title, city_label, date, date_display, start_time, end_time, timezone, start_iso (offset included), venue, venue_extra, maps_link, lat, lng, leader, chapter, chapter_email, sponsor_name, sponsor_url, bring, tickets. Six upcoming events, none in California at research time. leader, chapter_email and sponsor_* are never read; tickets is the link only when it is on seashepherd.org (it is often Eventbrite, never followed). robots.txt allows everything but /wp-admin/."
+  },
+  {
+    "source": "dxe:losangeles",
+    "kind": "dxe",
+    "hostName": "Direct Action Everywhere Los Angeles",
+    "pageId": "153660568381244",
+    "sourceUrl": "https://www.directactioneverywhere.com/events",
+    "enabled": false,
+    "trust": "pending: Facebook-derived, free-text addresses that can be residential, no coordinates; keep out of TRUSTED_SOURCES",
+    "decision": "DxE syncs its chapters' Facebook page events into its own activist database and serves them from adb.dxe.io; the bot never contacts Facebook, but the data originates there. Awaiting the owner's call on whether Facebook-derived data is acceptable under the ingest policy before this entry is enabled.",
+    "scope": "Los Angeles chapter (34.052235, -118.24368)",
+    "verified": "2026-09-30: the Webflow events page loads events.min.js, which calls GET https://adb.dxe.io/regions (every chapter with Name, ID, Lat, Lng) and GET https://adb.dxe.io/external_events/<ID>?start_time=&end_time= (the site uses now-1h to now+180d). GET external_events/153660568381244?start_time=2026-09-29T00:00:00.000Z&end_time=2027-03-28T00:00:00.000Z returned HTTP 200 text/plain with JSON { events: [{ ID, PageID, Name, Description, StartTime 2026-09-30T23:00:00Z, EndTime, LocationName '2428 3rd Ave, Los Angeles, CA 90018', LocationCity '', LocationAddress '', Lat 0, Lng 0, Cover <fbcdn url>, AttendingCount, InterestedCount, IsCanceled false, LastUpdate, EventbriteID '', EventbriteURL '', Featured }], local_events_found: true }. Sample: Rose's Law Banner Drops for Animal Rights, 2026-09-30 16:00 PT. AttendingCount, InterestedCount, Cover, PageID and EventbriteID are never read. /chapters/<lat,lng> returns internal fields (MailingListID, Token, EmailToken, Organizers, LastContact) and is never called. No robots.txt (404). Undocumented endpoint; fail soft."
+  },
+  {
+    "source": "dxe:orangecounty",
+    "kind": "dxe",
+    "hostName": "Direct Action Everywhere Orange County",
+    "pageId": "702933306228838",
+    "sourceUrl": "https://www.directactioneverywhere.com/events",
+    "enabled": false,
+    "trust": "pending; same as dxe:losangeles",
+    "decision": "Same as dxe:losangeles: Facebook-derived data, awaiting the owner's call before this entry is enabled.",
+    "scope": "Orange County chapter (33.681, -117.846)",
+    "verified": "2026-09-30: GET external_events/702933306228838 with the same window returned HTTP 200 text/plain with { \"events\": null, \"local_events_found\": false } (no upcoming events at research time; null is treated as zero items). Chapter id and coordinates from https://adb.dxe.io/regions."
+  },
+  {
+    "source": "dxe:sandiego",
+    "kind": "dxe",
+    "hostName": "Direct Action Everywhere San Diego",
+    "pageId": "467491373774358",
+    "sourceUrl": "https://www.directactioneverywhere.com/events",
+    "enabled": false,
+    "trust": "pending; same as dxe:losangeles",
+    "decision": "Same as dxe:losangeles: Facebook-derived data, awaiting the owner's call before this entry is enabled.",
+    "scope": "San Diego chapter (32.720833, -117.16325)",
+    "verified": "2026-09-30: chapter id and coordinates read from https://adb.dxe.io/regions (HTTP 200). The external_events endpoint was not called for this chapter (host request budget); it is the same endpoint verified for LA and OC."
+  },
+  {
+    "source": "dxe:inlandempire",
+    "kind": "dxe",
+    "hostName": "Direct Action Everywhere Inland Empire",
+    "pageId": "646452251880737",
+    "sourceUrl": "https://www.directactioneverywhere.com/events",
+    "enabled": false,
+    "trust": "pending; same as dxe:losangeles",
+    "decision": "Same as dxe:losangeles: Facebook-derived data, awaiting the owner's call before this entry is enabled.",
+    "scope": "Inland Empire chapter (33.942, -117.423)",
+    "verified": "2026-09-30: chapter id and coordinates read from https://adb.dxe.io/regions (HTTP 200). The external_events endpoint was not called for this chapter (host request budget)."
+  },
+  {
+    "source": "jsonld:animalrightscalendar-la",
+    "kind": "jsonld",
+    "hostName": "Animal Rights Calendar",
+    "url": "https://animalrightscalendar.com/?coordinates=-118.2437%2C34.0522&city=Los+Angeles&timezone=America%2FLos_Angeles&radius=100&showOnlineEvents=false",
+    "detailLinkPattern": "^/events/",
+    "maxPages": 50,
+    "trust": "pending by design: events are submitted by activists and moderated by Anonymous for the Voiceless, and the JSON-LD names no organiser, so every item lands in the moderation queue under this host. Keep out of TRUSTED_SOURCES.",
+    "scope": "100 mile radius of downtown Los Angeles (covers Orange County, Inland Empire, Ventura); the aggregator behind cubeoftruth.com (Cubes of Truth, LA Animal Defense League, LA Animal Victory Meetup, Save vigils)",
+    "verified": "2026-09-30: the listing is server-rendered only when coordinates (lng,lat) are in the query; city= alone returned UK events. GET returned HTTP 200 text/html with 21 event links, each carrying ?referrer=... (the crawler strips the query before following), and organisation links under /organizations/. Events read from it: Cube of Truth: Orange (The Outlets at Orange, 2026-10-03 18:00 PT), Reptile Super Show 2-Day Outreach (Anaheim Convention Center, 2026-10-03), Animal Victory Meetup - End Cages (Santa Monica, 2026-10-04), Abolish Fur - LA Animal Victory Meetup (Beverly Gardens Park, 2026-10-11). Detail pages carry \"@type\": \"Event\" with name, startDate/endDate in UTC, a Place with name and postal address, description and url (verified on two detail pages). robots.txt on animalrightscalendar.com and arc.cubeoftruth.com: User-Agent * / Allow: / / Disallow: /admin/. /api/events answers 403 without credentials and is not used. Host resolution is open: one source per /organizations/<slug> page would give clean hosts if those pages render hrefs server-side (not verified)."
+  },
+  {
+    "source": "jsonld:animalrightscalendar-sd",
+    "kind": "jsonld",
+    "hostName": "Animal Rights Calendar",
+    "url": "https://animalrightscalendar.com/?coordinates=-117.1611%2C32.7157&city=San+Diego&timezone=America%2FLos_Angeles&radius=60&showOnlineEvents=false",
+    "detailLinkPattern": "^/events/",
+    "maxPages": 50,
+    "trust": "pending by design; same as jsonld:animalrightscalendar-la",
+    "scope": "60 mile radius of downtown San Diego (Save vigils and Cubes of Truth in San Diego County)",
+    "verified": "2026-09-30: not fetched; the same listing as jsonld:animalrightscalendar-la with the San Diego coordinates the research named (-117.1611,32.7157). The radius is a choice (the LA listing already reaches Orange County); check the first --dry-run count."
+  },
+  {
+    "source": "jsonld:veganstreetfair-eventeny",
+    "kind": "jsonld",
+    "hostName": "Vegan Street Fair",
+    "url": "https://www.eventeny.com/events/veganstreetfair2026-24185/",
+    "enabled": false,
+    "trust": "pending if approved: a third-party ticketing page, not the organisation's own site",
+    "decision": "Eventeny is a third-party ticketing platform, not the organisation's own website. It is not on the forbidden list and its robots.txt allows /events/, but its terms were not reviewed and the policy says own websites only. Also unverified: whether this series URL keeps pointing at the next occurrence after 2026-10-18. Enable only after the owner rules on both.",
+    "scope": "Los Angeles, monthly (Westwood in October 2026)",
+    "verified": "2026-09-30: GET returned HTTP 200 text/html with a \"@type\": \"Festival\" JSON-LD node (accepted by events-jsonld.ts): name Vegan Street Fair Los Angeles 2026 - The MONTHLY Vegan Event for Everyone!, startDate 2026-10-18T11:00:00-07:00, endDate 2026-10-18T16:00:00-07:00, eventStatus EventScheduled, PostalAddress 1036 Broxton Ave, url with ?series=11221. The org's own site veganstreetfair.com is Wix with LocalBusiness JSON-LD only and Donorbox ticket links. If approved, use this entry without detailLinkPattern."
+  },
+  {
+    "source": "jsonld:nsefu-sdvegfest",
+    "kind": "jsonld",
+    "hostName": "Nsefu Wildlife Conservation Foundation",
+    "url": "https://nsefu.org/calendar-of-events",
+    "detailLinkPattern": "^/calendar-of-events/\\d{4}/\\d{1,2}/\\d{1,2}/",
+    "titleFilter": "vegfest|vegan",
+    "enabled": false,
+    "trust": "pending if approved: a mixed calendar filtered by title",
+    "decision": "The same Squarespace calendar carries non-vegan events (the-nsefu-monkey-motorcycle-run 2026-10-03, fido-fest-2026, san-diego-earthfest). The titleFilter keeps only titles matching vegfest|vegan; the owner decides whether a filtered mixed calendar is acceptable or whether San Diego VegFest (annual, late September, Balboa Park) is curated by hand instead.",
+    "scope": "San Diego (hosts San Diego VegFest, annual, late September, Balboa Park)",
+    "verified": "2026-09-30: GET /calendar-of-events returned HTTP 200 with 26 dated detail links; GET /calendar-of-events/2026/9/26/san-diego-vegfest returned HTTP 200 with \"@type\": \"Event\" (San Diego VegFest, startDate 2026-09-26T11:00:00-0700, Place Balboa Park, Park Boulevard, San Diego, CA 92101; Eventbrite ticket link present but never followed). Squarespace robots.txt allows the path and disallows /*?format=ical. The dated-path rule in events-jsonld.ts already skips links older than 30 days."
   }
 ]

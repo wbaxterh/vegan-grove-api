@@ -1,9 +1,9 @@
 /**
- * Helpers shared by the two event scrapers: the keyword-to-type map, text
- * cleanup for HTML-bearing descriptions, and time handling. Feeds and pages
- * from Southern California organizations often carry local times without a
- * zone; those are read as America/Los_Angeles and sent with an explicit
- * offset, which is what the ingest contract requires.
+ * Helpers shared by the event scripts: the keyword-to-type map, text cleanup
+ * for HTML-bearing descriptions, and time handling. Feeds and pages from
+ * Southern California organizations often carry local times without a zone;
+ * those are read as America/Los_Angeles and sent with an explicit offset,
+ * which is what the ingest contract requires.
  */
 import { createHash } from 'node:crypto';
 import type { EVENT_TYPES } from '../../../src/models/enums.js';
@@ -23,9 +23,19 @@ const TYPE_PATTERNS: Array<[RegExp, EventType]> = [
   [/\b(sanctuary|tour|volunteer\w*|work ?day|open house|farm day|barn)\b/i, 'sanctuary_day'],
 ];
 
-export function eventTypeFromText(text: string): EventType {
+/** The first keyword type that matches, or null when none does. */
+export function matchEventType(text: string): EventType | null {
   for (const [pattern, type] of TYPE_PATTERNS) if (pattern.test(text)) return type;
-  return 'other';
+  return null;
+}
+
+export function eventTypeFromText(text: string): EventType {
+  return matchEventType(text) ?? 'other';
+}
+
+/** Keyword inference, else the allowlist entry's `defaultType`, else `other`. */
+export function inferEventType(text: string, src: { defaultType?: EventType }): EventType {
+  return matchEventType(text) ?? src.defaultType ?? 'other';
 }
 
 const NAMED_ENTITIES: Record<string, string> = {
@@ -71,6 +81,17 @@ export function cleanText(text: string | undefined | null, max: number): string 
     .replace(/\s*\n\s*/g, '\n')
     .trim()
     .slice(0, max);
+}
+
+/** An IANA zone a feed named, when the runtime knows it; America/Los_Angeles otherwise. */
+export function zoneOrDefault(zone: string | null | undefined): string {
+  if (!zone) return DEFAULT_ZONE;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: zone });
+    return zone;
+  } catch {
+    return DEFAULT_ZONE;
+  }
 }
 
 /** Offset of `zone` at the given instant, in minutes east of UTC. */
@@ -137,6 +158,20 @@ export function splitLocation(text: string): { venueName: string; address: strin
   const first = parts[0] as string;
   if (/\d/.test(first)) return { venueName: '', address: parts.join(', ').slice(0, 240) };
   return { venueName: first.slice(0, 120), address: parts.slice(1).join(', ').slice(0, 240) };
+}
+
+/**
+ * A point the API accepts from whatever a feed put in its lat/lng fields
+ * (numbers or numeric strings). `0,0` is how APIs say "unknown", never a
+ * Southern California venue, so it is treated as absent.
+ */
+export function pointOf(lat: unknown, lng: unknown): { lng: number; lat: number } | undefined {
+  if (lat === null || lat === undefined || lng === null || lng === undefined) return undefined;
+  const la = Number(lat);
+  const ln = Number(lng);
+  if (!Number.isFinite(la) || !Number.isFinite(ln)) return undefined;
+  if (Math.abs(la) > 90 || Math.abs(ln) > 180 || (la === 0 && ln === 0)) return undefined;
+  return { lng: ln, lat: la };
 }
 
 /** A stable id no longer than the schema allows; long ids are hashed. */

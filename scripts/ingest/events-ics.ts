@@ -7,58 +7,38 @@
  *   npm run ingest:events:ics -- --input other.json # a different source list
  *
  * Source list: scripts/data/event-sources.json, entries shaped
- * `{ source, hostName, ics }`. Entries carrying a `placeholder` note or no
- * `ics` are skipped. Each feed is fetched once, after robots.txt, with a
- * descriptive User-Agent; VEVENTs become items with the UID as `sourceId`
- * (recurring events expand to `UID/occurrence` for the next 90 days), the
- * type guessed from keywords with `other` as the fallback, and times sent
- * with an explicit offset (floating times are read as America/Los_Angeles).
- * Cancelled and long-past events are dropped. Nothing about attendees is
+ * `{ source, hostName, ics }` plus the optional fields in lib/sources.ts.
+ * Entries carrying `enabled: false`, a `placeholder` note or no `ics` are
+ * skipped. Each feed is fetched once, after robots.txt, with a descriptive
+ * User-Agent. An empty or non-calendar body (The Events Calendar answers a
+ * 0-byte text/html page when nothing is upcoming) counts as zero events,
+ * not a failure. VEVENTs become items with the UID as `sourceId` (recurring
+ * events expand to `UID/occurrence` for the next 90 days), the type guessed
+ * from keywords with the entry's `defaultType` then `other` as the fallback,
+ * and times sent with an explicit offset (floating times are read as
+ * America/Los_Angeles). Cancelled and long-past events are dropped, as is
+ * any title the entry's `titleFilter` rejects. Nothing about attendees is
  * ever read: ICS attendee lines are ignored by construction.
  */
 import ICAL from 'ical.js';
 import type { EventItem } from '../../src/services/ingest.js';
-import {
-  argValue,
-  dataPath,
-  isMain,
-  postIngest,
-  readJson,
-  runScript,
-  scriptContext,
-} from './lib/client.js';
+import { isMain, postIngest, runScript, scriptContext } from './lib/client.js';
 import {
   cleanText,
   DEFAULT_ZONE,
-  eventTypeFromText,
+  inferEventType,
   localToIso,
   splitLocation,
   stableId,
   toIsoInZone,
 } from './lib/events.js';
 import { fetchAllowed } from './lib/http.js';
+import { type EventSource, keepsTitle, loadSources } from './lib/sources.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PAST_GRACE_MS = DAY_MS;
 const HORIZON_MS = 90 * DAY_MS;
 const MAX_OCCURRENCES = 12;
-
-export interface EventSource {
-  source: string;
-  hostName: string;
-  ics?: string;
-  url?: string;
-  placeholder?: string;
-  /** Free text from whoever checked the source; informational. */
-  verified?: string;
-  /** Regex (as a string) for same-origin detail links on the list page that carry the Event JSON-LD. */
-  detailLinkPattern?: string;
-}
-
-/** Entries kept for tracking but not fetched: a `placeholder` note, or a verified note that says so. */
-export function isPlaceholder(src: EventSource): boolean {
-  return Boolean(src.placeholder) || /placeholder/i.test(src.verified ?? '');
-}
 
 function icalTimeToIso(time: ICAL.Time): string | null {
   if (time.zone?.tzid === 'floating' || time.isDate) {
@@ -86,7 +66,7 @@ function toItem(
   const startsAt = icalTimeToIso(start);
   if (!startsAt) return null;
   const title = cleanText(ev.summary, 140);
-  if (!title) return null;
+  if (!title || !keepsTitle(src, title)) return null;
   const description = cleanText(ev.description, 4000);
   const url = ev.component.getFirstPropertyValue('url');
   const where = splitLocation(cleanText(ev.location, 400));
@@ -94,7 +74,7 @@ function toItem(
   return {
     sourceId: stableId(`${ev.uid}${suffix}`),
     title,
-    type: eventTypeFromText(`${title} ${description}`),
+    type: inferEventType(`${title} ${description}`, src),
     startsAt,
     endsAt: end ? (icalTimeToIso(end) ?? undefined) : undefined,
     venueName: where.venueName || undefined,
@@ -148,6 +128,11 @@ function occurrenceItems(
   return items;
 }
 
+/** A body ical.js can parse. Anything else (0 bytes, an HTML page) means no events, not an error. */
+export function looksLikeCalendar(text: string): boolean {
+  return /BEGIN:VCALENDAR/i.test(text.slice(0, 4096));
+}
+
 /** Map one feed's text to ingest items. Exported for the tests. */
 export function icsToEventItems(
   text: string,
@@ -155,6 +140,7 @@ export function icsToEventItems(
   feedUrl: string,
   now: Date = new Date(),
 ): EventItem[] {
+  if (!looksLikeCalendar(text)) return [];
   const root = new ICAL.Component(ICAL.parse(text));
   registerTimezones(root);
   return root.getAllSubcomponents('vevent').flatMap((vevent) => {
@@ -168,14 +154,20 @@ export function icsToEventItems(
 
 async function main(): Promise<void> {
   const ctx = scriptContext();
-  const file = dataPath(argValue(ctx.args, 'input') ?? 'event-sources.json');
-  const sources = readJson<EventSource[]>(file).filter((s) => s.ics && !isPlaceholder(s));
-  ctx.logger.info({ file, feeds: sources.length }, 'ics sources');
-
-  for (const src of sources) {
-    const feedUrl = src.ics as string;
+  for (const src of loadSources(ctx, 'ics')) {
+    const feedUrl = src.ics;
+    if (!feedUrl) {
+      ctx.logger.warn({ source: src.source }, 'no ics url; skipped');
+      continue;
+    }
     try {
       const text = await fetchAllowed(feedUrl, { accept: 'text/calendar,*/*' });
+      if (!looksLikeCalendar(text)) {
+        ctx.logger.warn(
+          { source: src.source, bytes: text.length },
+          'empty or non-calendar body; counting as no events',
+        );
+      }
       const items = icsToEventItems(text, src, feedUrl);
       ctx.logger.info({ source: src.source, items: items.length }, 'mapped');
       await postIngest(ctx, 'events', src.source, items);

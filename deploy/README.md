@@ -20,6 +20,20 @@ aws ssm send-command --region us-east-1 --document-name AWS-RunShellScript \
 
 `deploy.sh` resets the checkout to `origin/main`, runs `npm ci` and the build, renders `.env`, and does `pm2 startOrReload` so the reload is zero-downtime for a single process. Roll back by checking out the previous commit and running the same script.
 
+## Data refresh
+
+`refresh-data.sh` runs every seed and ingest script in order (OSM places, gardens, curated sanctuaries and gardens, groves, organizations, event feeds, media, guides) and posts through the same ingest endpoint the bot uses. It detaches itself with `nohup` and writes to `/srv/vegan-grove/data-refresh/<timestamp>.log`, because the tiled Overpass import alone can outlive a Run Command timeout and a killed command would leave the later steps unrun. A failed step is logged and the next one still runs.
+
+```bash
+# start (optionally limit to steps whose name contains a word, e.g. events)
+aws ssm send-command --region us-east-1 --document-name AWS-RunShellScript   --targets Key=tag:Name,Values=vegan-grove-api   --parameters commands="sudo -u vg /srv/vegan-grove/api/deploy/refresh-data.sh"
+
+# check on it: RUNNING or FINISHED, then the tail of the latest log
+aws ssm send-command --region us-east-1 --document-name AWS-RunShellScript   --targets Key=tag:Name,Values=vegan-grove-api   --parameters commands="sudo -u vg /srv/vegan-grove/api/deploy/refresh-data.sh --status"
+```
+
+The log ends with the `/api/stats` counts and `REFRESH_DONE`. Run a deploy first when the scripts changed; the refresh uses whatever is checked out.
+
 ## TLS
 
 Once `api.vegangrove.org` resolves to the instance, one command through Run Command issues and installs the certificate and enables renewal:

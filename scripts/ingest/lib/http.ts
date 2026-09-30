@@ -1,12 +1,29 @@
 /**
- * Polite fetching for the scrapers: a descriptive User-Agent, a timeout, and
- * robots.txt honoured before any page or feed is read. The ingest contract
- * never scrapes Facebook, Instagram, Meetup or Eventbrite; those hosts are
- * refused here outright so a config typo cannot reach them.
+ * Polite fetching for the scrapers: a descriptive User-Agent, a timeout,
+ * robots.txt honoured before any page or feed is read, and at most one
+ * request per second per host. The ingest contract never scrapes Facebook,
+ * Instagram, Meetup or Eventbrite; those hosts are refused here outright so
+ * a config typo cannot reach them.
  */
 import { INGEST_USER_AGENT, ROBOTS_TOKEN } from './client.js';
 
 const FORBIDDEN_HOSTS = ['facebook.com', 'instagram.com', 'meetup.com', 'eventbrite.com'];
+const PACE_MS = 1000;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const nextSlotByHost = new Map<string, number>();
+
+/**
+ * Wait until a second has passed since this process last asked the host for
+ * anything (robots.txt included). Callers that overlap queue up in order.
+ */
+export async function paceHost(url: string): Promise<void> {
+  const host = new URL(url).host;
+  const now = Date.now();
+  const slot = Math.max(now, nextSlotByHost.get(host) ?? 0);
+  nextSlotByHost.set(host, slot + PACE_MS);
+  if (slot > now) await sleep(slot - now);
+}
 
 export function isForbiddenHost(url: string): boolean {
   const host = new URL(url).hostname.toLowerCase();
@@ -92,6 +109,7 @@ async function robotsFor(origin: string): Promise<RobotsRules> {
   if (cached) return cached;
   let rules = new RobotsRules('');
   try {
+    await paceHost(origin);
     const res = await fetch(`${origin}/robots.txt`, {
       headers: { 'User-Agent': INGEST_USER_AGENT },
       signal: AbortSignal.timeout(15_000),
@@ -115,10 +133,11 @@ export interface FetchOptions {
   timeoutMs?: number;
 }
 
-/** Fetch a page or feed as text after the host and robots.txt checks. */
+/** Fetch a page or feed as text after the host and robots.txt checks, paced per host. */
 export async function fetchAllowed(url: string, options: FetchOptions = {}): Promise<string> {
   if (isForbiddenHost(url)) throw new Error(`refusing to fetch ${new URL(url).hostname}`);
   if (!(await robotsAllows(url))) throw new Error(`robots.txt disallows ${url}`);
+  await paceHost(url);
   const res = await fetch(url, {
     headers: { 'User-Agent': INGEST_USER_AGENT, Accept: options.accept ?? 'text/html,*/*' },
     signal: AbortSignal.timeout(options.timeoutMs ?? 30_000),
@@ -126,4 +145,18 @@ export async function fetchAllowed(url: string, options: FetchOptions = {}): Pro
   });
   if (!res.ok) throw new Error(`GET ${url}: HTTP ${res.status}`);
   return res.text();
+}
+
+/**
+ * Fetch a JSON API body under the same checks. The body is parsed whatever
+ * the content type says (DxE serves JSON as text/plain); a parse failure
+ * names the URL only, never the body.
+ */
+export async function fetchJsonAllowed(url: string, options: FetchOptions = {}): Promise<unknown> {
+  const text = await fetchAllowed(url, { accept: 'application/json,*/*', ...options });
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new Error(`GET ${url}: body is not JSON`);
+  }
 }

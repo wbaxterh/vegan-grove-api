@@ -7,45 +7,41 @@
  *   npm run ingest:events:jsonld -- --input other.json # a different source list
  *
  * Source list: scripts/data/event-sources.json, entries shaped
- * `{ source, hostName, url, detailLinkPattern? }`; entries with a
+ * `{ source, hostName, url, detailLinkPattern?, maxPages? }` plus the
+ * optional fields in lib/sources.ts; entries with `enabled: false`, a
  * `placeholder` note or no `url` are skipped. The list page is fetched once
  * after robots.txt with a descriptive User-Agent. Every
  * `<script type="application/ld+json">` is parsed; plain objects, arrays and
  * `@graph` are walked and anything typed `Event` (or a subtype such as
  * `SocialEvent`) becomes an item.
  *
- * Squarespace and Wix sites put the Event JSON-LD on each event's detail
- * page, not the list. For those, `detailLinkPattern` is a regex matched
- * against same-origin links on the list page; the matching pages (at most
- * 50, one request per second, robots.txt respected on each, links whose path
- * carries a date more than a month old skipped) are fetched and mined the
- * same way. `@id` or `url` is the `sourceId`, the type comes from keywords
- * with `other` as the fallback, and times are sent with an explicit offset.
- * Only Event fields are read: `performer`, `organizer` and `attendee` nodes
- * are never mapped, and past or cancelled events are dropped.
+ * Squarespace, Wix and calendar aggregators put the Event JSON-LD on each
+ * event's detail page, not the list. For those, `detailLinkPattern` is a
+ * regex matched against the path of same-origin links on the list page,
+ * query string stripped (a listing's `?referrer=` tracking is dropped; the
+ * `?format=ical` and `?format=json` variants Squarespace's robots.txt
+ * disallows are never followed). The matching pages (at most `maxPages`,
+ * capped at 50, one request per second, robots.txt respected on each, links
+ * whose path carries a date more than a month old skipped) are fetched and
+ * mined the same way. `@id` or `url` is the `sourceId`, the type comes from
+ * keywords with the entry's `defaultType` then `other` as the fallback, and
+ * times are sent with an explicit offset. Only Event fields are read:
+ * `performer`, `organizer` and `attendee` nodes are never mapped, and past
+ * or cancelled events and titles a `titleFilter` rejects are dropped.
  */
 import type { EventItem } from '../../src/services/ingest.js';
-import { type EventSource, isPlaceholder } from './events-ics.js';
-import {
-  argValue,
-  dataPath,
-  isMain,
-  postIngest,
-  readJson,
-  runScript,
-  type ScriptContext,
-  scriptContext,
-} from './lib/client.js';
+import { isMain, postIngest, runScript, type ScriptContext, scriptContext } from './lib/client.js';
 import {
   cleanText,
-  eventTypeFromText,
+  inferEventType,
   normalizeDateString,
+  pointOf,
   splitLocation,
   stableId,
 } from './lib/events.js';
 import { fetchAllowed } from './lib/http.js';
-
-type JsonObject = Record<string, unknown>;
+import { isObject, type JsonObject } from './lib/json.js';
+import { type EventSource, keepsTitle, loadSources } from './lib/sources.js';
 
 const SCRIPT_RE =
   /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
@@ -54,11 +50,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const PAST_GRACE_MS = DAY_MS;
 const STALE_LINK_MS = 30 * DAY_MS;
 export const MAX_DETAIL_PAGES = 50;
-const CRAWL_PACE_MS = 1000;
-
-function isObject(v: unknown): v is JsonObject {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 function typesOf(node: JsonObject): string[] {
   const t = node['@type'];
@@ -123,22 +114,12 @@ function placeOf(node: JsonObject): Pick<EventItem, 'venueName' | 'address' | 'l
   }
   if (!isObject(loc)) return {};
   const geo = isObject(loc.geo) ? loc.geo : undefined;
-  const lat = Number(geo?.latitude);
-  const lng = Number(geo?.longitude);
-  const location =
-    geo &&
-    Number.isFinite(lat) &&
-    Number.isFinite(lng) &&
-    Math.abs(lat) <= 90 &&
-    Math.abs(lng) <= 180
-      ? { lng, lat }
-      : undefined;
   const venueName = typeof loc.name === 'string' ? cleanText(loc.name, 120) : '';
   const address = addressText(loc.address);
   return {
     venueName: venueName || undefined,
     address: address || undefined,
-    location,
+    location: geo ? pointOf(geo.latitude, geo.longitude) : undefined,
   };
 }
 
@@ -172,14 +153,14 @@ function nodeToItem(
 ): EventItem | null {
   const window = eventWindow(node, now);
   const title = cleanText(typeof node.name === 'string' ? node.name : '', 140);
-  if (!window || !title) return null;
+  if (!window || !title || !keepsTitle(src, title)) return null;
   const description = cleanText(typeof node.description === 'string' ? node.description : '', 4000);
   const url = absoluteUrl(node.url, pageUrl);
   const id = typeof node['@id'] === 'string' && node['@id'].trim() ? node['@id'] : undefined;
   return {
     sourceId: stableId(id ?? url ?? `${title}|${window.startsAt}`),
     title,
-    type: eventTypeFromText(`${title} ${description}`),
+    type: inferEventType(`${title} ${description}`, src),
     ...window,
     ...placeOf(node),
     hostName: src.hostName,
@@ -214,16 +195,29 @@ function pathDate(pathname: string): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/** Squarespace's per-event feed links; robots.txt disallows them and they are never pages. */
+function isFeedVariant(url: URL): boolean {
+  return /^(ical|json)$/i.test(url.searchParams.get('format') ?? '');
+}
+
+/** The entry's `maxPages` when it lowers the crawl cap; the cap otherwise. */
+export function detailPageLimit(src: Pick<EventSource, 'maxPages'>): number {
+  const wanted = Math.floor(src.maxPages ?? MAX_DETAIL_PAGES);
+  return Math.min(MAX_DETAIL_PAGES, Math.max(1, Number.isFinite(wanted) ? wanted : 1));
+}
+
 /**
- * Same-origin links on a list page that match the source's detail pattern,
- * de-duplicated, without query strings (Squarespace's `?format=ical` links
- * are disallowed by its robots.txt), capped. Exported for the tests.
+ * Same-origin links on a list page whose path matches the source's detail
+ * pattern, de-duplicated with the query string stripped (a listing's
+ * `?referrer=` tracking is dropped; `?format=ical` and `?format=json`
+ * variants are never followed), capped. Exported for the tests.
  */
 export function collectDetailLinks(
   html: string,
   pageUrl: string,
   pattern: string,
   now: Date = new Date(),
+  limit: number = MAX_DETAIL_PAGES,
 ): string[] {
   const origin = new URL(pageUrl).origin;
   const re = new RegExp(pattern);
@@ -235,28 +229,28 @@ export function collectDetailLinks(
     } catch {
       continue;
     }
-    if (url.origin !== origin || url.search || !re.test(url.pathname)) continue;
+    if (url.origin !== origin || isFeedVariant(url) || !re.test(url.pathname)) continue;
     const dated = pathDate(url.pathname);
     if (dated && dated.getTime() < now.getTime() - STALE_LINK_MS) continue;
     links.add(`${url.origin}${url.pathname}`);
-    if (links.size >= MAX_DETAIL_PAGES) break;
+    if (links.size >= limit) break;
   }
   return Array.from(links);
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-async function crawlSource(ctx: ScriptContext, src: EventSource): Promise<EventItem[]> {
-  const pageUrl = src.url as string;
+async function crawlSource(ctx: ScriptContext, src: EventSource, pageUrl: string) {
   const html = await fetchAllowed(pageUrl);
   const items = extractJsonLdEvents(html, pageUrl, src);
   if (!src.detailLinkPattern) return items;
 
-  const links = collectDetailLinks(html, pageUrl, src.detailLinkPattern);
-  ctx.logger.info({ source: src.source, detailPages: links.length }, 'crawling detail pages');
+  const limit = detailPageLimit(src);
+  const links = collectDetailLinks(html, pageUrl, src.detailLinkPattern, new Date(), limit);
+  ctx.logger.info(
+    { source: src.source, detailPages: links.length, limit },
+    'crawling detail pages',
+  );
   const seen = new Set(items.map((i) => i.sourceId));
   for (const link of links) {
-    await sleep(CRAWL_PACE_MS);
     try {
       for (const item of extractJsonLdEvents(await fetchAllowed(link), link, src)) {
         if (seen.has(item.sourceId)) continue;
@@ -272,13 +266,13 @@ async function crawlSource(ctx: ScriptContext, src: EventSource): Promise<EventI
 
 async function main(): Promise<void> {
   const ctx = scriptContext();
-  const file = dataPath(argValue(ctx.args, 'input') ?? 'event-sources.json');
-  const sources = readJson<EventSource[]>(file).filter((s) => s.url && !isPlaceholder(s));
-  ctx.logger.info({ file, pages: sources.length }, 'json-ld sources');
-
-  for (const src of sources) {
+  for (const src of loadSources(ctx, 'jsonld')) {
+    if (!src.url) {
+      ctx.logger.warn({ source: src.source }, 'no url; skipped');
+      continue;
+    }
     try {
-      const items = await crawlSource(ctx, src);
+      const items = await crawlSource(ctx, src, src.url);
       ctx.logger.info({ source: src.source, items: items.length }, 'mapped');
       await postIngest(ctx, 'events', src.source, items);
     } catch (err) {

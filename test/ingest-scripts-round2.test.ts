@@ -366,6 +366,30 @@ describe('Mobilize mapping', () => {
       },
       {
         ...base,
+        id: 557000,
+        title: 'Monthly Florida Team Meeting',
+        browser_url: 'https://www.mobilize.us/thehumaneleague/event/557000/',
+        event_type: 'MEETING',
+        is_virtual: true,
+        location: null,
+        timeslots: [{ id: 19, start_date: unix(2026, 9, 21, 1, 0) }],
+      },
+      {
+        ...base,
+        id: 558000,
+        title: 'Demand CJ Group END CAGES: Leafleting',
+        browser_url: 'https://www.mobilize.us/thehumaneleague/event/558000/',
+        event_type: 'VISIBILITY_EVENT',
+        location: {
+          venue: 'H Mart San Francisco',
+          locality: 'San Francisco',
+          region: 'CA',
+          location: { latitude: 37.7093, longitude: -122.4623 },
+        },
+        timeslots: [{ id: 21, start_date: unix(2026, 9, 10, 18, 0) }],
+      },
+      {
+        ...base,
         id: 554000,
         title: 'New York leafleting',
         browser_url: 'https://www.mobilize.us/thehumaneleague/event/554000/',
@@ -396,9 +420,21 @@ describe('Mobilize mapping', () => {
     ],
   };
 
-  it('keeps public approved California or virtual events, one item per future timeslot', () => {
+  it('keeps public approved Southern California events, one item per future timeslot', () => {
     const items = mobilizeToEventItems(page, SRC, NOW);
+    // A Florida webinar and a San Francisco leafleting (California, outside the box) are out;
+    // the virtual LA and OC meeting is in because its own title says so.
     expect(items.map((i) => i.sourceId)).toEqual(['550184/1', '551000/7', '552000/9', '553000/11']);
+    const any = mobilizeToEventItems(page, { ...SRC, region: 'any' } as EventSource, NOW);
+    expect(any.map((i) => i.sourceId)).toEqual([
+      '550184/1',
+      '551000/7',
+      '552000/9',
+      '553000/11',
+      '557000/19',
+      '558000/21',
+      '554000/13',
+    ]);
     expect(items[0]).toEqual({
       sourceId: '550184/1',
       title: 'Demand H Mart (CJ group) end cages: Leafleting!',

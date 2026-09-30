@@ -77,12 +77,38 @@ export function mobilizeNextUrl(page: unknown): string | null {
   return next.startsWith(`${API_ORIGIN}/`) ? next : null;
 }
 
-function isEligible(ev: JsonObject): boolean {
+/** Southern California, the same box the place importer tiles (s, w, n, e). */
+const SOCAL = { south: 32.5, west: -119.5, north: 34.9, east: -116.0 };
+/** A virtual event is local when its own words say so; a national webinar is not. */
+const SOCAL_WORDS =
+  /\b(los angeles|orange county|san diego|inland empire|long beach|socal|southern california|ventura|santa barbara|riverside|san bernardino|pasadena|santa monica|irvine|anaheim)\b|\bL\.?A\.?\b|\bOC\b|\bSD\b/i;
+
+function inSoCal(ev: JsonObject): boolean {
+  const location = readObject(ev.location);
+  const point = location ? readObject(location.location) : null;
+  const lat = point ? Number(point.latitude) : Number.NaN;
+  const lng = point ? Number(point.longitude) : Number.NaN;
+  if (Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0)) {
+    return lat >= SOCAL.south && lat <= SOCAL.north && lng >= SOCAL.west && lng <= SOCAL.east;
+  }
+  if (ev.is_virtual === true) {
+    return SOCAL_WORDS.test(`${readString(ev, 'title')} ${readString(ev, 'description')}`);
+  }
+  // A physical event with no coordinates: trust the region only for the source's own state.
+  return location ? readString(location, 'region').trim().toUpperCase() === 'CA' : false;
+}
+
+/**
+ * PUBLIC and APPROVED, and in Southern California: a physical event by its
+ * coordinates, a virtual one by its own words (a national webinar hosted from
+ * Ohio is not an action near a member). `region: "any"` on the source keeps
+ * everything the organisation publishes.
+ */
+function isEligible(ev: JsonObject, src: EventSource): boolean {
   if (readString(ev, 'visibility').toUpperCase() !== 'PUBLIC') return false;
   if (readString(ev, 'approval_status').toUpperCase() !== 'APPROVED') return false;
-  const location = readObject(ev.location);
-  const region = location ? readString(location, 'region').trim().toUpperCase() : '';
-  return region === 'CA' || ev.is_virtual === true;
+  if ((src as { region?: string }).region === 'any') return true;
+  return inSoCal(ev);
 }
 
 function placeOf(ev: JsonObject): Pick<EventItem, 'venueName' | 'address' | 'location'> {
@@ -187,7 +213,7 @@ export function mobilizeToEventItems(
   if (!body) return [];
   return readArray(body.data).flatMap((raw) => {
     const ev = readObject(raw);
-    return ev && isEligible(ev) ? slotItems(ev, src, now) : [];
+    return ev && isEligible(ev, src) ? slotItems(ev, src, now) : [];
   });
 }
 

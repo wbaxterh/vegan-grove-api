@@ -11,7 +11,12 @@ import {
 } from '../scripts/ingest/lib/events.js';
 import { isForbiddenHost, RobotsRules } from '../scripts/ingest/lib/http.js';
 import { type SeedEntry, toItem as seedToItem } from '../scripts/ingest/media-seed.js';
-import { providersToWatchLinks, withAttribution } from '../scripts/ingest/media-tmdb.js';
+import {
+  movieToFields,
+  pickTrailer,
+  providersToWatchLinks,
+  withAttribution,
+} from '../scripts/ingest/media-tmdb.js';
 import { bindingsToMediaItems } from '../scripts/ingest/media-wikidata.js';
 import { eventItemSchema, mediaItemSchema } from '../src/services/ingest.js';
 
@@ -267,6 +272,69 @@ describe('media mapping', () => {
       .filter(({ result }) => !result.success)
       .map(({ entry }) => entry.title);
     expect(failures).toEqual([]);
+  });
+
+  it('maps a TMDB movie with appended credits, videos and certifications to item fields', () => {
+    const movie = {
+      overview: '  A film about the cause.  ',
+      tagline: 'See it.',
+      release_date: '2018-03-29',
+      runtime: 120.4,
+      genres: [{ name: 'Documentary' }, { name: '' }],
+      vote_average: 8.66,
+      vote_count: 412,
+      original_language: 'en',
+      videos: {
+        results: [
+          { site: 'YouTube', type: 'Teaser', key: 'teaser_01', official: true },
+          { site: 'Vimeo', type: 'Trailer', key: 'vimeo1234', official: true },
+          { site: 'YouTube', type: 'Trailer', key: 'fan_trailer1', official: false },
+          { site: 'YouTube', type: 'Trailer', key: 'official_tr1', official: true },
+        ],
+      },
+      credits: {
+        crew: [
+          { job: 'Producer', name: 'P' },
+          { job: 'Director', name: 'Chris Delforce' },
+          { job: 'Director', name: 'Chris Delforce' },
+        ],
+        cast: [
+          { name: 'Joaquin Phoenix', order: 1 },
+          { name: 'Rooney Mara', order: 0 },
+          { name: 'Sia', order: 2 },
+        ],
+      },
+      release_dates: {
+        results: [
+          { iso_3166_1: 'AU', release_dates: [{ certification: 'MA15+' }] },
+          { iso_3166_1: 'US', release_dates: [{ certification: '' }, { certification: 'NR' }] },
+        ],
+      },
+    };
+    const fields = movieToFields(movie);
+    expect(fields).toEqual({
+      year: 2018,
+      releaseDate: '2018-03-29',
+      synopsis: 'A film about the cause.',
+      tagline: 'See it.',
+      runtimeMinutes: 120,
+      directors: ['Chris Delforce'],
+      featuring: ['Rooney Mara', 'Joaquin Phoenix', 'Sia'],
+      genres: ['Documentary'],
+      rating: 8.7,
+      ratingCount: 412,
+      contentRating: 'NR',
+      originalLanguage: 'en',
+      trailerYoutubeId: 'official_tr1',
+    });
+    expect(
+      mediaItemSchema.safeParse({ sourceId: 'Q1', title: 'T', kind: 'film', ...fields }).success,
+    ).toBe(true);
+    // No votes means no rating, and a teaser is the fallback when there is no trailer.
+    expect(movieToFields({ vote_average: 7, vote_count: 0 })).toEqual({});
+    expect(
+      pickTrailer({ videos: { results: [{ site: 'YouTube', type: 'Teaser', key: 'teaser_01' }] } }),
+    ).toBe('teaser_01');
   });
 
   it('turns TMDB providers into watch links and adds the JustWatch attribution', () => {

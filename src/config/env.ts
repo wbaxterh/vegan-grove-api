@@ -56,6 +56,9 @@ export const envSchema = z
 
     AWS_REGION: z.string().default('us-east-1'),
     S3_MEDIA_BUCKET: optionalString,
+    // Public origin that serves the media bucket (CloudFront). Poster and backdrop URLs are
+    // null in API responses until it is set.
+    MEDIA_CDN_ORIGIN: optionalString,
     S3_PRESIGN_TTL_SECONDS: z.coerce.number().int().min(30).max(3600).default(300),
     BUNNY_STREAM_LIBRARY_ID: optionalString,
     BUNNY_STREAM_API_KEY: optionalString,

@@ -13,17 +13,18 @@ const listQuery = paginationQuery.extend({
 });
 
 /** Media library. Published items only; trailers embed via youtube-nocookie.com. */
-export function mediaRouter(_deps: AppDeps): Router {
+export function mediaRouter(deps: AppDeps): Router {
   const router = Router();
+  const read = { cdnOrigin: deps.env.MEDIA_CDN_ORIGIN };
 
   router.get('/', validate({ query: listQuery }), async (req, res) => {
     const { query } = getValidated<{ query: z.infer<typeof listQuery> }>(req);
-    res.json(await listPublishedMedia(query));
+    res.json(await listPublishedMedia(query, read));
   });
 
   router.get('/:slug', validate({ params: slugParams }), async (req, res) => {
     const { params } = getValidated<{ params: z.infer<typeof slugParams> }>(req);
-    const media = await getPublishedMediaBySlug(params.slug);
+    const media = await getPublishedMediaBySlug(params.slug, read);
     if (!media) throw notFound('Media item not found.');
     res.json({ media });
   });

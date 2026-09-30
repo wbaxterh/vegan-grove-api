@@ -1,7 +1,9 @@
 /**
- * Enrich media items that carry a TMDB id with a synopsis, a poster and US
- * watch providers, then POST them back to `/api/ingest/media` under their
- * original source and sourceId (so a film never gets a second row).
+ * Enrich media items that carry a TMDB id with a synopsis, tagline, poster,
+ * backdrop, runtime, genres, directors, featured people, rating, US content
+ * rating, the official YouTube trailer id and US watch providers, then POST
+ * them back to `/api/ingest/media` under their original source and sourceId
+ * (so a film never gets a second row).
  *
  *   npm run ingest:media:tmdb -- --dry-run                 # fetch, map, print counts, no uploads
  *   npm run ingest:media:tmdb                              # POST with INGEST_KEY to API_URL
@@ -13,10 +15,11 @@
  * seed array (`scripts/data/media-seed.json`, source `curated`) is accepted
  * too. Only items with `externalIds.tmdb` are touched. Needs `TMDB_API_KEY`.
  *
- * Posters are downloaded from TMDB and uploaded to `S3_MEDIA_BUCKET` under
- * `media/posters/<tmdbId>.jpg` with the AWS SDK (credentials from the usual
+ * Posters and backdrops are downloaded from TMDB and uploaded to
+ * `S3_MEDIA_BUCKET` under `media/posters/<tmdbId>.jpg` and
+ * `media/backdrops/<tmdbId>.jpg` with the AWS SDK (credentials from the usual
  * chain); the API only ever receives the key, never a remote image URL. When
- * the bucket is not configured the poster step is skipped and logged.
+ * the bucket is not configured the image steps are skipped and logged.
  *
  * Watch providers come from TMDB's JustWatch-powered endpoint for region US.
  * Their terms require attribution, so every enriched item carries the tag
@@ -47,18 +50,38 @@ import {
 
 export const JUSTWATCH_ATTRIBUTION = 'Watch providers data by JustWatch';
 const TMDB_API = 'https://api.themoviedb.org/3';
-const TMDB_IMAGE = 'https://image.tmdb.org/t/p/w500';
+const TMDB_IMAGE = 'https://image.tmdb.org/t/p';
+const POSTER_SIZE = 'w500';
+const BACKDROP_SIZE = 'w1280';
+/** One request per film: the sub-resources ride along on the movie call. */
+const APPEND = 'videos,credits,release_dates';
 const PACE_MS = 250;
+const MAX_FEATURING = 6;
 
 interface Batch {
   source: string;
   items: MediaItemInput[];
 }
 
-interface TmdbMovie {
+export interface TmdbMovie {
   overview?: string;
+  tagline?: string;
   poster_path?: string | null;
+  backdrop_path?: string | null;
   release_date?: string;
+  runtime?: number | null;
+  genres?: Array<{ name?: string }>;
+  vote_average?: number;
+  vote_count?: number;
+  original_language?: string;
+  videos?: { results?: Array<{ site?: string; type?: string; key?: string; official?: boolean }> };
+  credits?: {
+    crew?: Array<{ job?: string; name?: string }>;
+    cast?: Array<{ name?: string; order?: number }>;
+  };
+  release_dates?: {
+    results?: Array<{ iso_3166_1?: string; release_dates?: Array<{ certification?: string }> }>;
+  };
 }
 
 interface Provider {
@@ -87,8 +110,9 @@ export function readBatches(data: unknown): Batch[] {
   throw new Error('input must be { batches }, { source, items } or a seed array');
 }
 
-async function tmdbGet<T>(pathname: string, key: string): Promise<T> {
-  const res = await fetch(`${TMDB_API}${pathname}?api_key=${encodeURIComponent(key)}`, {
+async function tmdbGet<T>(pathname: string, key: string, append?: string): Promise<T> {
+  const extra = append ? `&append_to_response=${encodeURIComponent(append)}` : '';
+  const res = await fetch(`${TMDB_API}${pathname}?api_key=${encodeURIComponent(key)}${extra}`, {
     headers: { 'User-Agent': INGEST_USER_AGENT, Accept: 'application/json' },
     signal: AbortSignal.timeout(30_000),
   });
@@ -96,23 +120,23 @@ async function tmdbGet<T>(pathname: string, key: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-async function uploadPoster(
+async function uploadImage(
   ctx: ScriptContext,
   s3: S3Client | null,
-  tmdbId: string,
-  posterPath: string,
+  key: string,
+  tmdbPath: string,
+  size: string,
 ): Promise<string | undefined> {
-  const key = `media/posters/${tmdbId}.jpg`;
   if (!s3 || !ctx.env.S3_MEDIA_BUCKET) {
-    ctx.logger.warn({ tmdbId }, 'S3_MEDIA_BUCKET not set; poster skipped');
+    ctx.logger.warn({ key }, 'S3_MEDIA_BUCKET not set; image skipped');
     return undefined;
   }
   if (ctx.dryRun) return key;
-  const res = await fetch(`${TMDB_IMAGE}${posterPath}`, {
+  const res = await fetch(`${TMDB_IMAGE}/${size}${tmdbPath}`, {
     headers: { 'User-Agent': INGEST_USER_AGENT },
     signal: AbortSignal.timeout(30_000),
   });
-  if (!res.ok) throw new Error(`poster ${tmdbId}: HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`image ${key}: HTTP ${res.status}`);
   const body = Buffer.from(await res.arrayBuffer());
   await s3.send(
     new PutObjectCommand({
@@ -143,6 +167,75 @@ export function providersToWatchLinks(
     .map((provider) => ({ provider: provider.slice(0, 60), url: link }));
 }
 
+/** The one YouTube trailer id to embed: official trailers first, then any trailer, then a teaser. */
+export function pickTrailer(movie: TmdbMovie): string | undefined {
+  const videos = (movie.videos?.results ?? []).filter(
+    (v) => v.site === 'YouTube' && v.key && /^[A-Za-z0-9_-]{6,20}$/.test(v.key),
+  );
+  const rank = (v: (typeof videos)[number]) =>
+    (v.type === 'Trailer' ? 0 : v.type === 'Teaser' ? 2 : 4) + (v.official ? 0 : 1);
+  return videos.sort((a, b) => rank(a) - rank(b))[0]?.key;
+}
+
+function uniqueNames(names: Array<string | undefined>, limit: number): string[] | undefined {
+  const out = names
+    .map((n) => n?.trim())
+    .filter((n): n is string => Boolean(n))
+    .filter((n, i, all) => all.indexOf(n) === i)
+    .slice(0, limit);
+  return out.length > 0 ? out : undefined;
+}
+
+function usCertification(movie: TmdbMovie): string | undefined {
+  const us = movie.release_dates?.results?.find((r) => r.iso_3166_1 === 'US');
+  return us?.release_dates?.map((d) => d.certification?.trim()).find(Boolean) || undefined;
+}
+
+function ratingOf(movie: TmdbMovie): { rating?: number; ratingCount?: number } {
+  if (typeof movie.vote_average !== 'number' || !(movie.vote_count && movie.vote_count > 0)) {
+    return {};
+  }
+  return { rating: Math.round(movie.vote_average * 10) / 10, ratingCount: movie.vote_count };
+}
+
+function isoDate(value: string | undefined): string | undefined {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+}
+
+/** Pure mapping from a TMDB movie (with videos, credits and release_dates appended) to item fields. */
+export function movieToFields(movie: TmdbMovie): Partial<MediaItemInput> {
+  const releaseDate = isoDate(movie.release_date);
+  const cast = [...(movie.credits?.cast ?? [])].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+  const fields: Partial<MediaItemInput> = {
+    year: releaseDate ? Number(releaseDate.slice(0, 4)) : undefined,
+    releaseDate,
+    synopsis: movie.overview?.trim().slice(0, 4000) || undefined,
+    tagline: movie.tagline?.trim().slice(0, 300) || undefined,
+    runtimeMinutes: movie.runtime && movie.runtime > 0 ? Math.round(movie.runtime) : undefined,
+    directors: uniqueNames(
+      (movie.credits?.crew ?? []).filter((c) => c.job === 'Director').map((c) => c.name),
+      10,
+    ),
+    featuring: uniqueNames(
+      cast.map((c) => c.name),
+      MAX_FEATURING,
+    ),
+    genres: uniqueNames(
+      (movie.genres ?? []).map((g) => g.name),
+      10,
+    ),
+    ...ratingOf(movie),
+    contentRating: usCertification(movie),
+    originalLanguage: /^[a-z]{2,3}$/.test(movie.original_language ?? '')
+      ? movie.original_language
+      : undefined,
+    trailerYoutubeId: pickTrailer(movie),
+  };
+  return Object.fromEntries(
+    Object.entries(fields).filter(([, v]) => v !== undefined),
+  ) as Partial<MediaItemInput>;
+}
+
 export function withAttribution(tags: string[] | undefined): string[] {
   const out = [...(tags ?? [])];
   if (!out.includes('tmdb')) out.push('tmdb');
@@ -157,18 +250,31 @@ async function enrich(
   item: MediaItemInput,
 ): Promise<MediaItemInput> {
   const tmdbId = item.externalIds?.tmdb as string;
-  const movie = await tmdbGet<TmdbMovie>(`/movie/${tmdbId}`, key);
+  const movie = await tmdbGet<TmdbMovie>(`/movie/${tmdbId}`, key, APPEND);
   const providers = await tmdbGet<TmdbProviders>(`/movie/${tmdbId}/watch/providers`, key);
   const posterKey = movie.poster_path
-    ? await uploadPoster(ctx, s3, tmdbId, movie.poster_path)
+    ? await uploadImage(ctx, s3, `media/posters/${tmdbId}.jpg`, movie.poster_path, POSTER_SIZE)
     : undefined;
-  const year = movie.release_date ? Number(movie.release_date.slice(0, 4)) : Number.NaN;
+  const backdropKey = movie.backdrop_path
+    ? await uploadImage(
+        ctx,
+        s3,
+        `media/backdrops/${tmdbId}.jpg`,
+        movie.backdrop_path,
+        BACKDROP_SIZE,
+      )
+    : undefined;
+  const fields = movieToFields(movie);
   const links = providersToWatchLinks(providers);
+  // TMDB fills what the curated row left empty; a curated year, synopsis or trailer wins.
   return {
+    ...fields,
     ...item,
-    year: item.year ?? (Number.isFinite(year) ? year : undefined),
-    synopsis: item.synopsis || movie.overview?.trim().slice(0, 4000) || undefined,
+    year: item.year ?? fields.year,
+    synopsis: item.synopsis || fields.synopsis,
+    trailerYoutubeId: item.trailerYoutubeId ?? fields.trailerYoutubeId,
     posterKey: posterKey ?? item.posterKey,
+    backdropKey: backdropKey ?? item.backdropKey,
     watchLinks: links.length > 0 ? links : item.watchLinks,
     tags: withAttribution(item.tags),
   };

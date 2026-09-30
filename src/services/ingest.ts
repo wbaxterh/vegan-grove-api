@@ -106,6 +106,11 @@ export const organizationItemSchema = z
   })
   .strict();
 
+const imageKeySchema = z
+  .string()
+  .max(200)
+  .regex(/^(?!.*\.\.)[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\.(jpg|jpeg|png|webp)$/);
+
 export const mediaItemSchema = z
   .object({
     sourceId: sourceIdSchema,
@@ -113,11 +118,24 @@ export const mediaItemSchema = z
     kind: z.enum(MEDIA_KINDS),
     year: z.number().int().min(1900).max(2100).optional(),
     synopsis: z.string().trim().max(4000).optional(),
-    // An S3 key the script already uploaded: path segments and an image extension, no `..`.
-    posterKey: z
+    tagline: z.string().trim().max(300).optional(),
+    // S3 keys the script already uploaded: path segments and an image extension, no `..`.
+    posterKey: imageKeySchema.optional(),
+    backdropKey: imageKeySchema.optional(),
+    runtimeMinutes: z.number().int().min(1).max(1000).optional(),
+    releaseDate: z
       .string()
-      .max(200)
-      .regex(/^(?!.*\.\.)[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\.(jpg|jpeg|png|webp)$/)
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    directors: z.array(z.string().trim().min(1).max(100)).max(10).optional(),
+    featuring: z.array(z.string().trim().min(1).max(100)).max(12).optional(),
+    genres: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
+    rating: z.number().min(0).max(10).optional(),
+    ratingCount: z.number().int().min(0).optional(),
+    contentRating: z.string().trim().min(1).max(12).optional(),
+    originalLanguage: z
+      .string()
+      .regex(/^[a-z]{2,3}(-[A-Za-z]{2,4})?$/)
       .optional(),
     watchLinks: z
       .array(z.object({ provider: z.string().trim().min(1).max(60), url: urlSchema }).strict())
@@ -588,7 +606,18 @@ function prepareMedia(item: MediaItemInput): PreparedRow {
       kind: item.kind,
       year: item.year,
       synopsis: item.synopsis ?? '',
+      tagline: item.tagline,
       posterKey: item.posterKey,
+      backdropKey: item.backdropKey,
+      runtimeMinutes: item.runtimeMinutes,
+      releaseDate: item.releaseDate,
+      directors: item.directors,
+      featuring: item.featuring,
+      genres: item.genres,
+      rating: item.rating,
+      ratingCount: item.ratingCount,
+      contentRating: item.contentRating,
+      originalLanguage: item.originalLanguage,
       watchLinks: item.watchLinks,
       trailerYoutubeId: item.trailerYoutubeId,
       tags: item.tags,

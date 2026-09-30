@@ -120,7 +120,18 @@ const MEDIA_ORDER: KeysetField[] = [
   { field: '_id', direction: -1 },
 ];
 
-export function toPublicMedia(m: MediaRow) {
+/** Options every media read takes: where images are served from, if anywhere yet. */
+export interface MediaReadOptions {
+  cdnOrigin?: string;
+}
+
+/** An S3 key as a public URL on the media CDN, or `null` until the CDN exists. */
+export function mediaAssetUrl(key: string | null | undefined, cdnOrigin?: string): string | null {
+  if (!key || !cdnOrigin) return null;
+  return `${cdnOrigin.replace(/\/+$/, '')}/${key.replace(/^\/+/, '')}`;
+}
+
+export function toPublicMedia(m: MediaRow, options: MediaReadOptions = {}) {
   return {
     id: m._id.toHexString(),
     title: m.title,
@@ -128,7 +139,19 @@ export function toPublicMedia(m: MediaRow) {
     kind: m.kind,
     year: m.year ?? null,
     synopsis: m.synopsis,
+    tagline: m.tagline ?? null,
     posterKey: m.posterKey ?? null,
+    posterUrl: mediaAssetUrl(m.posterKey, options.cdnOrigin),
+    backdropUrl: mediaAssetUrl(m.backdropKey, options.cdnOrigin),
+    runtimeMinutes: m.runtimeMinutes ?? null,
+    releaseDate: m.releaseDate ?? null,
+    directors: m.directors ?? [],
+    featuring: m.featuring ?? [],
+    genres: m.genres ?? [],
+    rating: m.rating ?? null,
+    ratingCount: m.ratingCount ?? null,
+    contentRating: m.contentRating ?? null,
+    originalLanguage: m.originalLanguage ?? null,
     watchLinks: m.watchLinks.map((w) => ({ provider: w.provider, url: w.url })),
     trailerYoutubeId: m.trailerYoutubeId ?? null,
     tags: m.tags,
@@ -141,12 +164,15 @@ export function toPublicMedia(m: MediaRow) {
 
 export type PublicMedia = ReturnType<typeof toPublicMedia>;
 
-export async function listPublishedMedia(query: {
-  kind?: MediaItem['kind'];
-  tag?: string;
-  cursor?: string;
-  limit: number;
-}): Promise<Page<PublicMedia>> {
+export async function listPublishedMedia(
+  query: {
+    kind?: MediaItem['kind'];
+    tag?: string;
+    cursor?: string;
+    limit: number;
+  },
+  options: MediaReadOptions = {},
+): Promise<Page<PublicMedia>> {
   const filter: Record<string, unknown> = {
     status: 'published',
     ...keysetFilter(MEDIA_ORDER, query.cursor),
@@ -158,12 +184,15 @@ export async function listPublishedMedia(query: {
     .limit(query.limit + 1)
     .lean<MediaRow[]>();
   const page = keysetPage(rows, query.limit, MEDIA_ORDER);
-  return { items: page.items.map(toPublicMedia), nextCursor: page.nextCursor };
+  return { items: page.items.map((m) => toPublicMedia(m, options)), nextCursor: page.nextCursor };
 }
 
-export async function getPublishedMediaBySlug(slug: string): Promise<PublicMedia | null> {
+export async function getPublishedMediaBySlug(
+  slug: string,
+  options: MediaReadOptions = {},
+): Promise<PublicMedia | null> {
   const row = await MediaItemModel.findOne({ slug, status: 'published' }).lean<MediaRow>();
-  return row ? toPublicMedia(row) : null;
+  return row ? toPublicMedia(row, options) : null;
 }
 
 // ---- guides ----

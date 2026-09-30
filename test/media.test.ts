@@ -354,6 +354,27 @@ describe('media library (spec section 10)', () => {
       expect(after?.synopsis).toBe('Edited by hand.');
       expect(after?.year).toBe(2001);
 
+      // A run that carries no synopsis (the curated seed after a TMDB pass) leaves it alone.
+      const enriched = await MediaItemModel.create({
+        title: 'Enriched',
+        slug: 'enriched',
+        kind: 'documentary',
+        status: 'published',
+        synopsis: 'From TMDB.',
+        source: 'curated',
+        sourceId: 'Q9',
+        tags: ['curated'],
+      });
+      await ingestItems(
+        'media',
+        'curated',
+        [{ sourceId: 'Q9', title: 'Enriched', kind: 'documentary', tags: ['curated', 'ethics'] }],
+        { trusted: true },
+      );
+      const kept = await MediaItemModel.findById(enriched._id).lean();
+      expect(kept?.synopsis).toBe('From TMDB.');
+      expect(kept?.tags).toEqual(['curated', 'ethics']);
+
       const col = await supertest(ctx.app)
         .post('/api/admin/media/collections')
         .set(auth)

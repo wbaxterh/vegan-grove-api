@@ -630,7 +630,8 @@ function prepareMedia(item: MediaItemInput): PreparedRow {
       title: item.title,
       kind: item.kind,
       year: item.year,
-      synopsis: item.synopsis ?? '',
+      // Absent means "not mine to say": an enrichment run must never blank a synopsis.
+      synopsis: item.synopsis,
       tagline: item.tagline,
       posterKey: item.posterKey,
       backdropKey: item.backdropKey,
@@ -663,7 +664,7 @@ function prepareGuide(item: GuideItem): PreparedRow {
     set: {
       title: item.title,
       category: item.category,
-      summary: item.summary ?? '',
+      summary: item.summary,
       body: item.body,
       sources: item.sources.map((s) => compact(s)),
       sourceUrl: item.sourceUrl,

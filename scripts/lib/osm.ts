@@ -26,8 +26,10 @@ export const OSM_SOURCE = 'osm';
 export const OVERPASS_FALLBACK_URL = 'https://overpass-api.de/api/interpreter';
 const BATCH_SIZE = 200;
 const TILE_DEGREES = 0.25;
-const MAX_ATTEMPTS = 3;
-const BACKOFF_MS = [2_000, 6_000, 15_000];
+const MAX_ATTEMPTS = 2;
+const BACKOFF_MS = [2_000, 6_000];
+/** This many tiles failing in a row means the service is down, not the tile. */
+const ABORT_AFTER_CONSECUTIVE_FAILURES = 6;
 const RATE_LIMIT_WAIT_MS = 30_000;
 const TILE_PACE_MS = 500;
 
@@ -119,6 +121,21 @@ async function fetchTile(
   }
 }
 
+/** One tile through both mirrors; `null` when both gave up, so the caller decides what that means. */
+async function fetchTileOrNull(
+  primaryUrl: string,
+  query: string,
+  tile: string,
+  logger: Logger,
+): Promise<OverpassElement[] | null> {
+  try {
+    return await fetchTile(primaryUrl, query, logger);
+  } catch (err) {
+    logger.warn({ tile, err: err instanceof Error ? err.message : String(err) }, 'tile skipped');
+    return null;
+  }
+}
+
 export interface TiledResult {
   elements: OverpassElement[];
   /** Tiles both mirrors gave up on; their rows simply keep last run's values. */
@@ -139,13 +156,20 @@ export async function fetchOverpassTiled(
   const tiles = tileBbox(bbox);
   const seen = new Map<string, OverpassElement>();
   const failedTiles: string[] = [];
+  let consecutiveFailures = 0;
   for (const [i, tile] of tiles.entries()) {
-    try {
-      const elements = await fetchTile(primaryUrl, build(tile), logger);
+    const elements = await fetchTileOrNull(primaryUrl, build(tile), tile, logger);
+    if (elements) {
       for (const el of elements) seen.set(osmSourceId(el), el);
-    } catch (err) {
+      consecutiveFailures = 0;
+    } else {
       failedTiles.push(tile);
-      logger.warn({ tile, err: err instanceof Error ? err.message : String(err) }, 'tile skipped');
+      consecutiveFailures += 1;
+      if (consecutiveFailures >= ABORT_AFTER_CONSECUTIVE_FAILURES) {
+        throw new Error(
+          `Overpass is not answering (${consecutiveFailures} tiles in a row failed on both mirrors); try again later`,
+        );
+      }
     }
     if ((i + 1) % 20 === 0 || i + 1 === tiles.length) {
       logger.info(

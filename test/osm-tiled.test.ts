@@ -50,9 +50,9 @@ describe('fetchOverpassTiled', () => {
     const result = await pending;
     expect(result.elements.map((e) => e.id)).toEqual([1]);
     expect(result.failedTiles).toEqual(['33,-118,33.25,-117.75']);
-    // Three attempts on the primary mirror, then three on the fallback, for the bad tile only.
-    expect(seen.filter((u) => u.startsWith('https://primary.test')).length).toBe(4);
-    expect(seen.filter((u) => u.startsWith('https://overpass-api.de')).length).toBe(3);
+    // Two attempts on the primary mirror, then two on the fallback, for the bad tile only.
+    expect(seen.filter((u) => u.startsWith('https://primary.test')).length).toBe(3);
+    expect(seen.filter((u) => u.startsWith('https://overpass-api.de')).length).toBe(2);
   });
 
   it('fails only when no tile answered at all', async () => {
@@ -67,5 +67,24 @@ describe('fetchOverpassTiled', () => {
     );
     await vi.runAllTimersAsync();
     expect(await outcome).toContain('no tile at all');
+  });
+  it('gives up early when the service is down instead of grinding through every tile', async () => {
+    const fetchMock = vi.fn(async () => new Response('', { status: 504 }));
+    vi.stubGlobal('fetch', fetchMock);
+    // A 2 by 8 degree box is 64 tiles; the run must stop after the sixth consecutive failure.
+    const pending = fetchOverpassTiled(
+      'https://primary.test/api',
+      (bbox) => bbox,
+      logger,
+      '32,-120,34,-112',
+    );
+    const outcome = pending.then(
+      () => 'resolved',
+      (err: Error) => err.message,
+    );
+    await vi.runAllTimersAsync();
+    expect(await outcome).toContain('not answering');
+    // Six tiles, four requests each (two per mirror): nothing beyond that.
+    expect(fetchMock).toHaveBeenCalledTimes(24);
   });
 });

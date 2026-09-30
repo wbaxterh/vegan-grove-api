@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import mediaSeed from '../scripts/data/media-seed.json' with { type: 'json' };
 import { icsToEventItems } from '../scripts/ingest/events-ics.js';
 import { extractJsonLdEvents } from '../scripts/ingest/events-jsonld.js';
 import {
@@ -9,6 +10,7 @@ import {
   splitLocation,
 } from '../scripts/ingest/lib/events.js';
 import { isForbiddenHost, RobotsRules } from '../scripts/ingest/lib/http.js';
+import { type SeedEntry, toItem as seedToItem } from '../scripts/ingest/media-seed.js';
 import { providersToWatchLinks, withAttribution } from '../scripts/ingest/media-tmdb.js';
 import { bindingsToMediaItems } from '../scripts/ingest/media-wikidata.js';
 import { eventItemSchema, mediaItemSchema } from '../src/services/ingest.js';
@@ -247,6 +249,24 @@ describe('media mapping', () => {
       },
     ]);
     expect(mediaItemSchema.safeParse(items[0]).success).toBe(true);
+  });
+
+  it('maps every curated seed entry to an item the API schema accepts', () => {
+    // The seed file keeps TMDB ids as numbers; the API wants the digit string.
+    const item = seedToItem({ title: 'Earthlings', year: 2005, wikidata: 'Q1277684', tmdb: 30238 });
+    expect(item.externalIds).toEqual({ wikidata: 'Q1277684', tmdb: '30238' });
+    expect(item.kind).toBe('documentary');
+    expect(seedToItem({ title: 'Okja', year: 2017 })).toMatchObject({
+      sourceId: 'okja',
+      kind: 'film',
+      externalIds: {},
+    });
+
+    const failures = (mediaSeed as SeedEntry[])
+      .map((entry) => ({ entry, result: mediaItemSchema.safeParse(seedToItem(entry)) }))
+      .filter(({ result }) => !result.success)
+      .map(({ entry }) => entry.title);
+    expect(failures).toEqual([]);
   });
 
   it('turns TMDB providers into watch links and adds the JustWatch attribution', () => {

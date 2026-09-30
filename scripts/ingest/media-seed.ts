@@ -22,12 +22,13 @@ import {
   scriptContext,
 } from './lib/client.js';
 
-interface SeedEntry {
+export interface SeedEntry {
   title: string;
   year?: number;
   wikidata?: string;
   imdb?: string;
-  tmdb?: number;
+  /** The seed file stores TMDB ids as numbers; the API wants the digit string. */
+  tmdb?: number | string;
   kind?: 'documentary' | 'film' | 'series' | 'talk' | 'short';
   tags?: string[];
 }
@@ -42,12 +43,12 @@ function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-function toItem(entry: SeedEntry): Record<string, unknown> {
+export function toItem(entry: SeedEntry): Record<string, unknown> {
   const kind = entry.kind ?? (FEATURE_FILMS.has(entry.title) ? 'film' : 'documentary');
-  const externalIds: Record<string, string | number> = {};
+  const externalIds: Record<string, string> = {};
   if (entry.wikidata) externalIds.wikidata = entry.wikidata;
   if (entry.imdb) externalIds.imdb = entry.imdb;
-  if (entry.tmdb) externalIds.tmdb = entry.tmdb;
+  if (entry.tmdb !== undefined && entry.tmdb !== '') externalIds.tmdb = String(entry.tmdb);
   return {
     sourceId: entry.wikidata ?? slugify(entry.title),
     title: entry.title,

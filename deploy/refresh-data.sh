@@ -2,9 +2,9 @@
 # Vegan Grove data refresh: every seed and ingest script in order, detached
 # from the caller so an SSM Run Command timeout cannot kill it between
 # Overpass tiles. Run as the vg user:
-#   sudo -u vg /srv/vegan-grove/api/deploy/refresh-data.sh              # start everything
-#   sudo -u vg /srv/vegan-grove/api/deploy/refresh-data.sh events       # only steps matching a word
-#   sudo -u vg /srv/vegan-grove/api/deploy/refresh-data.sh --status     # state + tail of the latest log
+#   sudo -u vg bash /srv/vegan-grove/api/deploy/refresh-data.sh              # start everything
+#   sudo -u vg bash /srv/vegan-grove/api/deploy/refresh-data.sh events       # only steps matching a word
+#   sudo -u vg bash /srv/vegan-grove/api/deploy/refresh-data.sh --status     # state + tail of the latest log
 # A failed step is logged and the next one still runs, so one dead feed does
 # not block the rest. OSM places land approved because the importer already
 # filters to diet:vegan; everything else posts to the ingest endpoint, where
@@ -44,7 +44,7 @@ if [ "${1:-}" != "--run" ]; then
     exit 1
   fi
   log="$LOGS/$(date -u +%Y%m%dT%H%M%SZ).log"
-  nohup "$0" --run "$@" >"$log" 2>&1 < /dev/null &
+  nohup bash "$0" --run "$@" >"$log" 2>&1 < /dev/null &
   disown
   echo "started, log: $log"
   exit 0

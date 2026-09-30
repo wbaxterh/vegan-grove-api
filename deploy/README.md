@@ -26,10 +26,10 @@ aws ssm send-command --region us-east-1 --document-name AWS-RunShellScript \
 
 ```bash
 # start (optionally limit to steps whose name contains a word, e.g. events)
-aws ssm send-command --region us-east-1 --document-name AWS-RunShellScript   --targets Key=tag:Name,Values=vegan-grove-api   --parameters commands="sudo -u vg /srv/vegan-grove/api/deploy/refresh-data.sh"
+aws ssm send-command --region us-east-1 --document-name AWS-RunShellScript   --targets Key=tag:Name,Values=vegan-grove-api   --parameters commands="sudo -u vg bash /srv/vegan-grove/api/deploy/refresh-data.sh"
 
 # check on it: RUNNING or FINISHED, then the tail of the latest log
-aws ssm send-command --region us-east-1 --document-name AWS-RunShellScript   --targets Key=tag:Name,Values=vegan-grove-api   --parameters commands="sudo -u vg /srv/vegan-grove/api/deploy/refresh-data.sh --status"
+aws ssm send-command --region us-east-1 --document-name AWS-RunShellScript   --targets Key=tag:Name,Values=vegan-grove-api   --parameters commands="sudo -u vg bash /srv/vegan-grove/api/deploy/refresh-data.sh --status"
 ```
 
 The log ends with the `/api/stats` counts and `REFRESH_DONE`. Run a deploy first when the scripts changed; the refresh uses whatever is checked out.

@@ -78,7 +78,8 @@ npm run validate        # biome check, tsc --noEmit, vitest run, tsc build
 | `npm run ingest:organizations` | Curated `scripts/data/organizations.json` to `/api/ingest/organizations` |
 | `npm run ingest:media:wikidata` | Curated seed (`scripts/data/media-seed.json`, ids completed from Wikidata) plus one SPARQL discovery query, both to `/api/ingest/media`; caches both batches for the TMDB step |
 | `npm run ingest:media:seed` | The curated seed alone, no discovery |
-| `npm run ingest:media:tmdb` | Synopsis, poster (to S3) and JustWatch-attributed watch providers for items with a TMDB id; needs `TMDB_API_KEY` |
+| `npm run ingest:media:tmdb` | Synopsis, tagline, poster and backdrop (to S3), runtime, directors, featured people, genres, rating, US content rating, the official YouTube trailer id and JustWatch-attributed watch providers for items with a TMDB id; needs `TMDB_API_KEY` |
+| `npm run seed:media:collections` | Upserts the library shelves in `scripts/data/media-collections.json`, sets `featured` from the seed, and with `--prune-duplicates` removes a second copy of a curated title; runs on the host, needs the database |
 | `npm run ingest:guides` | Guide drafts from `scripts/data/guides.json` to `/api/ingest/guides`, landing as `draft` |
 | `npm run ingest:places:osm`, `ingest:places:gardens`, `ingest:sanctuaries` | Aliases for the three seed scripts, using the names from the ingest contract |
 | `npm run prepare` | installs the husky hooks |

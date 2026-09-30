@@ -72,7 +72,7 @@ class OverpassError extends Error {
 async function overpassOnce(url: string, query: string): Promise<OverpassElement[]> {
   const res = await fetch(`${url}?data=${encodeURIComponent(query)}`, {
     headers: { 'User-Agent': OSM_USER_AGENT, Accept: 'application/json' },
-    signal: AbortSignal.timeout(180_000),
+    signal: AbortSignal.timeout(90_000),
   });
   if (!res.ok) {
     const retryAfter = Number(res.headers.get('retry-after'));
@@ -119,24 +119,46 @@ async function fetchTile(
   }
 }
 
-/** Run `build(tile)` for every tile of the SoCal box and merge the results by OSM id. */
+export interface TiledResult {
+  elements: OverpassElement[];
+  /** Tiles both mirrors gave up on; their rows simply keep last run's values. */
+  failedTiles: string[];
+}
+
+/**
+ * Run `build(tile)` for every tile of the SoCal box and merge the results by OSM id.
+ * A tile that fails on both mirrors is skipped, not fatal: the importer only ever upserts,
+ * so landing 139 tiles beats discarding an hour of them because the 140th timed out.
+ */
 export async function fetchOverpassTiled(
   primaryUrl: string,
   build: QueryBuilder,
   logger: Logger,
   bbox: string = SOCAL_BBOX,
-): Promise<OverpassElement[]> {
+): Promise<TiledResult> {
   const tiles = tileBbox(bbox);
   const seen = new Map<string, OverpassElement>();
+  const failedTiles: string[] = [];
   for (const [i, tile] of tiles.entries()) {
-    const elements = await fetchTile(primaryUrl, build(tile), logger);
-    for (const el of elements) seen.set(osmSourceId(el), el);
+    try {
+      const elements = await fetchTile(primaryUrl, build(tile), logger);
+      for (const el of elements) seen.set(osmSourceId(el), el);
+    } catch (err) {
+      failedTiles.push(tile);
+      logger.warn({ tile, err: err instanceof Error ? err.message : String(err) }, 'tile skipped');
+    }
     if ((i + 1) % 20 === 0 || i + 1 === tiles.length) {
-      logger.info({ tiles: `${i + 1}/${tiles.length}`, elements: seen.size }, 'overpass progress');
+      logger.info(
+        { tiles: `${i + 1}/${tiles.length}`, elements: seen.size, failed: failedTiles.length },
+        'overpass progress',
+      );
     }
     if (i + 1 < tiles.length) await sleep(TILE_PACE_MS);
   }
-  return Array.from(seen.values());
+  if (failedTiles.length === tiles.length) {
+    throw new Error(`Overpass answered no tile at all (${tiles.length} tried)`);
+  }
+  return { elements: Array.from(seen.values()), failedTiles };
 }
 
 export const osmSourceId = (el: OverpassElement) => `${el.type}/${el.id}`;
@@ -269,12 +291,20 @@ export async function runImporter(run: ImporterRun): Promise<void> {
   const logger = createLogger({ NODE_ENV: env.NODE_ENV, LOG_LEVEL: 'info' });
 
   logger.info({ url: env.OVERPASS_URL, run: run.name }, 'fetching from Overpass, tiled');
-  const elements = await fetchOverpassTiled(env.OVERPASS_URL, run.query, logger);
+  const { elements, failedTiles } = await fetchOverpassTiled(env.OVERPASS_URL, run.query, logger);
   const items = elements.map(run.map).filter((p): p is PlaceItem => p !== null);
   logger.info(
-    { fetched: elements.length, skipped: elements.length - items.length, ...summarize(items) },
+    {
+      fetched: elements.length,
+      skipped: elements.length - items.length,
+      failedTiles: failedTiles.length,
+      ...summarize(items),
+    },
     'mapped',
   );
+  if (failedTiles.length > 0) {
+    logger.warn({ failedTiles }, 'some tiles were skipped; rerun to fill them in');
+  }
 
   if (dryRun) {
     logger.info('dry run: nothing written');

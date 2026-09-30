@@ -68,8 +68,10 @@ for spec in "${STEPS[@]}"; do
   read -r name args <<<"$spec"
   wanted "$name" || continue
   echo "== $name $(date -u +%H:%M:%SZ)"
+  # Every line the script prints goes to the log as it happens, so --status shows
+  # progress (Overpass tiles, batch counts) instead of a header until the step ends.
   # shellcheck disable=SC2086
-  if npm run --silent "$name" -- $args 2>&1 | tail -n 4; then
+  if npm run --silent "$name" -- $args 2>&1; then
     echo "ok $name"
   else
     echo "FAILED $name"

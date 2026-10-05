@@ -6,17 +6,15 @@
 #   sudo -u vg bash /srv/vegan-grove/api/deploy/refresh-data.sh events       # only steps matching a word
 #   sudo -u vg bash /srv/vegan-grove/api/deploy/refresh-data.sh --status     # state + tail of the latest log
 # A failed step is logged and the next one still runs, so one dead feed does
-# not block the rest. OSM places land approved because the importer already
-# filters to diet:vegan; everything else posts to the ingest endpoint, where
+# not block the rest. All scripts POST to the ingest endpoint, where
 # TRUSTED_SOURCES decides between pending and published.
 set -uo pipefail
 APP=/srv/vegan-grove/api
 LOGS=/srv/vegan-grove/data-refresh
 STEPS=(
-  "seed:places:osm --approve"
-  "seed:places:gardens --approve"
-  "seed:sanctuaries"
-  "seed:gardens:curated"
+  "ingest:places:osm"
+  "ingest:places:gardens"
+  "ingest:places:curated"
   "seed:groves"
   "ingest:organizations"
   "ingest:events:ics"

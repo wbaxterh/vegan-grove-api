@@ -22,7 +22,7 @@ aws ssm send-command --region us-east-1 --document-name AWS-RunShellScript \
 
 ## Data refresh
 
-`refresh-data.sh` runs every seed and ingest script in order (OSM places, gardens, curated sanctuaries and gardens, groves, organizations, event feeds, media, guides) and posts through the same ingest endpoint the bot uses. It detaches itself with `nohup` and writes to `/srv/vegan-grove/data-refresh/<timestamp>.log`, because the tiled Overpass import alone can outlive a Run Command timeout and a killed command would leave the later steps unrun. A failed step is logged and the next one still runs.
+`refresh-data.sh` runs every ingest script in order (OSM places, OSM gardens, curated places, groves, organizations, event feeds, media, guides) and posts through the ingest endpoint. Trust is determined server-side by `TRUSTED_SOURCES`. It detaches itself with `nohup` and writes to `/srv/vegan-grove/data-refresh/<timestamp>.log`, because the tiled Overpass import alone can outlive a Run Command timeout and a killed command would leave the later steps unrun. A failed step is logged and the next one still runs.
 
 ```bash
 # start (optionally limit to steps whose name contains a word, e.g. events)

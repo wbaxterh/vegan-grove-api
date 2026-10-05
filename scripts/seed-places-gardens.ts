@@ -1,12 +1,14 @@
 /**
- * Seed community gardens from OpenStreetMap: `leisure=garden` with
+ * Ingest community gardens from OpenStreetMap: `leisure=garden` with
  * `garden:type=community`, plus named `landuse=allotments`, in the Southern
  * California bounding box. They land as type `garden`, fully vegan, source
  * `osm`, and share every rule of the diet:vegan importer.
  *
- *   npm run seed:places:gardens -- --dry-run   # fetch and print counts
- *   npm run seed:places:gardens                # upsert as pending
- *   npm run seed:places:gardens -- --approve   # new rows land approved
+ *   npm run ingest:places:gardens -- --dry-run   # fetch and print counts
+ *   npm run ingest:places:gardens                # POST to /api/ingest/places
+ *
+ * Trust is determined server-side by TRUSTED_SOURCES; the script does not pass
+ * an --approve flag.
  *
  * Gardens are places to act (grow food, meet neighbours, host a potluck), not
  * businesses, so they never carry a chain flag and their tags say which kind
@@ -14,6 +16,7 @@
  */
 
 import type { PlaceItem } from '../src/services/ingest.js';
+import { isMain, runScript } from './ingest/lib/client.js';
 import { type OverpassElement, runImporter, toPlaceItem } from './lib/osm.js';
 
 const query = (bbox: string) =>
@@ -33,7 +36,6 @@ export function mapGarden(el: OverpassElement): PlaceItem | null {
   return item ? { ...item, chain: false } : null;
 }
 
-runImporter({ name: 'community gardens', query, map: mapGarden }).catch((err) => {
-  process.stderr.write(`seed failed: ${err instanceof Error ? err.stack : String(err)}\n`);
-  process.exit(1);
-});
+if (isMain(import.meta.url)) {
+  runScript(() => runImporter({ name: 'community gardens', query, map: mapGarden }));
+}

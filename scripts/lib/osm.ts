@@ -1,7 +1,7 @@
 /**
  * Shared OpenStreetMap plumbing for the place importers: the tiled Overpass
- * fetch, the tag-to-field mapping, and the run loop that hands mapped items
- * to the ingest service in batches. Both `seed-places-osm.ts` and
+ * fetch, the tag-to-field mapping, and the run loop that posts mapped items
+ * to the ingest API in batches. Both `seed-places-osm.ts` and
  * `seed-places-gardens.ts` are thin wrappers over this file.
  *
  * Overpass mirrors time out on the whole Southern California box, so the
@@ -9,22 +9,29 @@
  * from `OVERPASS_URL` to overpass-api.de (honouring its Retry-After on 429).
  * Elements that straddle a tile edge come back twice and are de-duplicated
  * by OSM id.
+ *
+ * The scripts never connect to the database. Dry-run fetches and maps without
+ * posting; a real run posts to POST /api/ingest/places with INGEST_KEY. Trust
+ * is determined server-side by TRUSTED_SOURCES; the scripts do not pass an
+ * --approve flag.
  */
-import { config as loadDotenv } from 'dotenv';
-import { loadEnv } from '../../src/config/env.js';
-import { connectDb, disconnectDb } from '../../src/db/mongoose.js';
 import { areaForPoint } from '../../src/lib/areas.js';
-import { createLogger, type Logger } from '../../src/lib/logger.js';
+import type { Logger } from '../../src/lib/logger.js';
 import { describePlace } from '../../src/lib/placeDescription.js';
-import { PlaceModel, type PlaceType, type VeganLevel } from '../../src/models/index.js';
-import { type IngestResult, ingestItems, type PlaceItem } from '../../src/services/ingest.js';
+import type { PlaceType, VeganLevel } from '../../src/models/index.js';
+import type { PlaceItem } from '../../src/services/ingest.js';
+import {
+  postIngest,
+  type ScriptContext,
+  scriptContext,
+  type Totals,
+} from '../ingest/lib/client.js';
 
 /** South of Santa Barbara, north of the border, west of the desert: s,w,n,e for Overpass. */
 export const SOCAL_BBOX = '32.5,-119.5,34.9,-116.0';
 export const OSM_USER_AGENT = 'vegan-grove-seed/0.2 (+https://vegangrove.org)';
 export const OSM_SOURCE = 'osm';
 export const OVERPASS_FALLBACK_URL = 'https://overpass-api.de/api/interpreter';
-const BATCH_SIZE = 200;
 const TILE_DEGREES = 0.25;
 const MAX_ATTEMPTS = 2;
 const BACKOFF_MS = [2_000, 6_000];
@@ -298,26 +305,26 @@ export interface ImporterRun {
   map: (el: OverpassElement) => PlaceItem | null;
 }
 
+export type { ScriptContext, Totals };
+
 /**
- * Flags: `--dry-run` fetches and prints counts without connecting;
- * `--approve` treats OSM as trusted for this run (new rows approved, pending
- * OSM rows promoted). Listing `osm` in `TRUSTED_SOURCES` does the same.
+ * Run an OSM import: fetch from Overpass, map to PlaceItems, and POST to
+ * `/api/ingest/places`. Dry-run fetches and maps but does not POST.
+ *
+ * Trust is determined server-side by TRUSTED_SOURCES; these scripts do not
+ * pass an --approve flag.
  */
 export async function runImporter(run: ImporterRun): Promise<void> {
-  loadDotenv({ quiet: true });
-  const dryRun = process.argv.includes('--dry-run');
-  const approve = process.argv.includes('--approve');
-  const env = loadEnv(
-    dryRun
-      ? { ...process.env, MONGODB_URI: process.env.MONGODB_URI ?? 'mongodb://dry-run' }
-      : process.env,
-  );
-  const logger = createLogger({ NODE_ENV: env.NODE_ENV, LOG_LEVEL: 'info' });
+  const ctx = scriptContext();
 
-  logger.info({ url: env.OVERPASS_URL, run: run.name }, 'fetching from Overpass, tiled');
-  const { elements, failedTiles } = await fetchOverpassTiled(env.OVERPASS_URL, run.query, logger);
+  ctx.logger.info({ url: ctx.env.OVERPASS_URL, run: run.name }, 'fetching from Overpass, tiled');
+  const { elements, failedTiles } = await fetchOverpassTiled(
+    ctx.env.OVERPASS_URL,
+    run.query,
+    ctx.logger,
+  );
   const items = elements.map(run.map).filter((p): p is PlaceItem => p !== null);
-  logger.info(
+  ctx.logger.info(
     {
       fetched: elements.length,
       skipped: elements.length - items.length,
@@ -327,70 +334,9 @@ export async function runImporter(run: ImporterRun): Promise<void> {
     'mapped',
   );
   if (failedTiles.length > 0) {
-    logger.warn({ failedTiles }, 'some tiles were skipped; rerun to fill them in');
+    ctx.logger.warn({ failedTiles }, 'some tiles were skipped; rerun to fill them in');
   }
 
-  if (dryRun) {
-    logger.info('dry run: nothing written');
-    return;
-  }
-
-  await connectDb(env, logger);
-  try {
-    await backfillProvenance(logger);
-    const trusted = approve || env.TRUSTED_SOURCES.includes(OSM_SOURCE);
-    const totals = await ingestInBatches(items, trusted, logger);
-    await PlaceModel.updateMany({ source: OSM_SOURCE, osmId: { $exists: false } }, [
-      { $set: { osmId: '$sourceId' } },
-    ]);
-    logger.info({ ...totals, trusted }, 'seed complete');
-  } finally {
-    await disconnectDb();
-  }
-}
-
-/** One-time: rows from the first import carry `osmId` only; copy it into `sourceId`. */
-async function backfillProvenance(logger: Logger): Promise<void> {
-  const provenance = await PlaceModel.updateMany(
-    { osmId: { $exists: true }, sourceId: { $exists: false } },
-    [{ $set: { sourceId: '$osmId', source: OSM_SOURCE } }],
-  );
-  const chain = await PlaceModel.updateMany(
-    { chain: { $exists: false } },
-    { $set: { chain: false } },
-  );
-  const edited = await PlaceModel.updateMany(
-    { adminEdited: { $exists: false } },
-    { $set: { adminEdited: [] } },
-  );
-  if (provenance.modifiedCount || chain.modifiedCount || edited.modifiedCount) {
-    logger.info(
-      {
-        sourceId: provenance.modifiedCount,
-        chain: chain.modifiedCount,
-        adminEdited: edited.modifiedCount,
-      },
-      'backfilled legacy rows',
-    );
-  }
-}
-
-async function ingestInBatches(
-  items: PlaceItem[],
-  trusted: boolean,
-  logger: Logger,
-): Promise<Omit<IngestResult, 'rejected'> & { rejected: number }> {
-  const totals = { inserted: 0, updated: 0, unchanged: 0, rejected: 0 };
-  for (let i = 0; i < items.length; i += BATCH_SIZE) {
-    const batch = items.slice(i, i + BATCH_SIZE);
-    const result = await ingestItems('places', OSM_SOURCE, batch, { trusted });
-    totals.inserted += result.inserted;
-    totals.updated += result.updated;
-    totals.unchanged += result.unchanged;
-    totals.rejected += result.rejected.length;
-    for (const r of result.rejected.slice(0, 3)) {
-      logger.warn({ sourceId: r.sourceId, errors: r.errors }, 'item rejected');
-    }
-  }
-  return totals;
+  const totals = await postIngest(ctx, 'places', OSM_SOURCE, items);
+  ctx.logger.info({ ...totals }, 'ingest complete');
 }

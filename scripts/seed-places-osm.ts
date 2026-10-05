@@ -1,10 +1,13 @@
 /**
- * Seed `places` from OpenStreetMap features tagged `diet:vegan=yes|only` in
+ * Ingest `places` from OpenStreetMap features tagged `diet:vegan=yes|only` in
  * the Southern California bounding box.
  *
- *   npm run seed:places:osm -- --dry-run   # fetch and print counts, touch nothing
- *   npm run seed:places:osm                # upsert by (source, sourceId) as pending
- *   npm run seed:places:osm -- --approve   # same, but new rows land approved
+ *   npm run ingest:places:osm -- --dry-run   # fetch and print counts, touch nothing
+ *   npm run ingest:places:osm                # POST to /api/ingest/places as pending
+ *
+ * Trust is determined server-side by TRUSTED_SOURCES; the script does not pass
+ * an --approve flag. Set `osm` in TRUSTED_SOURCES on the API to have OSM rows
+ * land approved.
  *
  * Mapping (spec section 9): `amenity=fast_food` is skipped unless
  * `diet:vegan=only`; `brand` or `brand:wikidata` marks a chain; area comes
@@ -12,14 +15,14 @@
  * `cuisine`, `wheelchair`, `outdoor_seating`, `takeaway` and `delivery` map to
  * fields and tags; a one-sentence description is generated when OSM has none.
  *
- * Rows go through the same ingest service as `POST /api/ingest/places`, so a
- * re-run refreshes every source-owned field, never changes a slug, never moves
- * a moderated row backwards, and never overwrites a field an admin edited.
- * Rows from the first import that carry only `osmId` get `sourceId` backfilled.
+ * The script POSTs to POST /api/ingest/places, so a re-run refreshes every
+ * source-owned field, never changes a slug, never moves a moderated row
+ * backwards, and never overwrites a field an admin edited.
  */
 
 import type { PlaceType } from '../src/models/index.js';
 import type { PlaceItem } from '../src/services/ingest.js';
+import { isMain, runScript } from './ingest/lib/client.js';
 import { type OverpassElement, runImporter, toPlaceItem } from './lib/osm.js';
 
 const query = (bbox: string) =>
@@ -86,7 +89,6 @@ export function mapVeganFeature(el: OverpassElement): PlaceItem | null {
   return toPlaceItem(el, { type, veganLevel });
 }
 
-runImporter({ name: 'diet:vegan places', query, map: mapVeganFeature }).catch((err) => {
-  process.stderr.write(`seed failed: ${err instanceof Error ? err.stack : String(err)}\n`);
-  process.exit(1);
-});
+if (isMain(import.meta.url)) {
+  runScript(() => runImporter({ name: 'diet:vegan places', query, map: mapVeganFeature }));
+}

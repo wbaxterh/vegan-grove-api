@@ -3,6 +3,7 @@ import { ActionLogModel } from './actionLog.js';
 import { CommentModel } from './comment.js';
 import { CompanionConversationModel } from './companionConversation.js';
 import { ConversationModel } from './conversation.js';
+import { CreatorModel } from './creator.js';
 import { EventModel } from './event.js';
 import { EventRsvpModel } from './eventRsvp.js';
 import { FriendInviteModel } from './friendInvite.js';
@@ -34,6 +35,7 @@ export * from './actionLog.js';
 export * from './comment.js';
 export * from './companionConversation.js';
 export * from './conversation.js';
+export * from './creator.js';
 export * from './enums.js';
 export * from './event.js';
 export * from './eventRsvp.js';
@@ -70,6 +72,7 @@ export const allModels = [
   CommentModel,
   CompanionConversationModel,
   ConversationModel,
+  CreatorModel,
   EventModel,
   EventRsvpModel,
   FriendInviteModel,

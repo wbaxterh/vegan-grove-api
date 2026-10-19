@@ -10,6 +10,7 @@ import { adminRouter } from './routes/admin.js';
 import { authRouter } from './routes/auth.js';
 import { companionRouter } from './routes/companion.js';
 import { conversationsRouter } from './routes/conversations.js';
+import { creatorsRouter } from './routes/creators.js';
 import { eventsRouter } from './routes/events.js';
 import { feedRouter } from './routes/feed.js';
 import { friendsRouter } from './routes/friends.js';
@@ -95,6 +96,7 @@ export function buildApp(deps: AppDeps): Express {
   app.use('/api/conversations', conversationsRouter(deps));
   app.use('/api/media', mediaRouter(deps));
   app.use('/api/guides', guidesRouter(deps));
+  app.use('/api/creators', creatorsRouter(deps));
   app.use('/api/actions', actionsRouter(deps));
   app.use('/api/companion', companionRouter(deps));
   app.use('/api/push-tokens', pushTokensRouter(deps));

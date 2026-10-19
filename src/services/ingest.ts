@@ -5,6 +5,8 @@ import { describePlace } from '../lib/placeDescription.js';
 import { pointInput } from '../lib/schemas.js';
 import { slugify } from '../lib/slug.js';
 import {
+  CREATOR_KINDS,
+  CreatorModel,
   EVENT_TYPES,
   EVENT_VISIBILITIES,
   EventModel,
@@ -215,11 +217,65 @@ export const guideItemSchema = z
   })
   .strict();
 
+const creatorSocialsSchema = z
+  .object({
+    youtube: z.string().trim().max(200).optional(),
+    instagram: z.string().trim().max(200).optional(),
+    tiktok: z.string().trim().max(200).optional(),
+    x: z.string().trim().max(200).optional(),
+    bluesky: z.string().trim().max(200).optional(),
+    mastodon: z.string().trim().max(200).optional(),
+  })
+  .strict();
+
+const veganSourceSchema = z
+  .object({
+    url: urlSchema,
+    label: z.string().trim().min(1).max(280),
+  })
+  .strict();
+
+export const creatorItemSchema = z
+  .object({
+    sourceId: sourceIdSchema,
+    name: z.string().trim().min(1).max(120),
+    alsoKnownAs: z.array(z.string().trim().min(1).max(120)).max(10).optional(),
+    kind: z.enum(CREATOR_KINDS).optional(),
+    members: z.array(z.string().trim().min(1).max(120)).max(10).optional(),
+    bio: z.string().trim().max(280).optional(),
+    topics: z.array(z.string().trim().min(1).max(60)).max(20).optional(),
+    country: z
+      .string()
+      .trim()
+      .regex(/^[A-Z]{2}$/, 'country must be ISO 3166-1 alpha-2')
+      .optional(),
+    languages: z
+      .array(
+        z
+          .string()
+          .trim()
+          .regex(/^[a-z]{2,3}$/),
+      )
+      .max(20)
+      .optional(),
+    website: urlSchema.optional(),
+    podcast: urlSchema.optional(),
+    socials: creatorSocialsSchema.optional(),
+    wikidata: z
+      .string()
+      .regex(/^Q\d{1,19}$/)
+      .optional(),
+    veganSource: veganSourceSchema.optional(),
+    sourceUrl: urlSchema.optional(),
+  })
+  .strict();
+
 export type PlaceItem = z.infer<typeof placeItemSchema>;
 export type EventItem = z.infer<typeof eventItemSchema>;
 export type OrganizationItem = z.infer<typeof organizationItemSchema>;
 export type MediaItemInput = z.infer<typeof mediaItemSchema>;
 export type GuideItem = z.infer<typeof guideItemSchema>;
+export type CreatorItem = z.infer<typeof creatorItemSchema>;
 
 export const ITEM_SCHEMAS: Record<IngestResource, z.ZodType> = {
   places: placeItemSchema,
@@ -227,6 +283,7 @@ export const ITEM_SCHEMAS: Record<IngestResource, z.ZodType> = {
   organizations: organizationItemSchema,
   media: mediaItemSchema,
   guides: guideItemSchema,
+  creators: creatorItemSchema,
 };
 
 /**
@@ -257,6 +314,7 @@ function personalDataErrors(resource: IngestResource, item: unknown): string[] {
   const errors: string[] = [];
   for (const key of Object.keys(item)) {
     const lower = key.toLowerCase();
+    if (lower === 'members' && resource === 'creators') continue;
     if (PERSONAL_KEYS.has(lower) || (lower === 'phone' && resource !== 'places')) {
       errors.push(`${key}: personal data is not accepted`);
     }
@@ -317,6 +375,7 @@ const MODERATION: Record<IngestResource, Moderation> = {
   organizations: { field: 'verified', pending: false, approved: true },
   media: { field: 'status', pending: 'draft', approved: 'published' },
   guides: { field: 'status', pending: 'draft', approved: 'published' },
+  creators: { field: 'status', pending: 'draft', approved: 'draft' },
 };
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {
@@ -673,6 +732,33 @@ function prepareGuide(item: GuideItem): PreparedRow {
   };
 }
 
+function prepareCreator(item: CreatorItem): PreparedRow {
+  return {
+    sourceId: item.sourceId,
+    slugBase: slugify(item.name),
+    set: {
+      name: item.name,
+      alsoKnownAs: item.alsoKnownAs ?? [],
+      kind: item.kind ?? 'person',
+      members: item.members ?? [],
+      bio: item.bio ?? '',
+      topics: item.topics ?? [],
+      country: item.country,
+      languages: item.languages ?? [],
+      website: item.website,
+      podcast: item.podcast,
+      socials: item.socials ? compact(item.socials) : undefined,
+      externalIds: item.wikidata ? { wikidata: item.wikidata } : undefined,
+      veganSource: item.veganSource,
+      sourceUrl: item.sourceUrl,
+    },
+    insertOnly: {
+      relatedGuideIds: [],
+      relatedMediaIds: [],
+    },
+  };
+}
+
 interface ValidatedItem {
   index: number;
   item: unknown;
@@ -730,6 +816,8 @@ async function prepare(
       return (items as MediaItemInput[]).map(prepareMedia);
     case 'guides':
       return (items as GuideItem[]).map(prepareGuide);
+    case 'creators':
+      return (items as CreatorItem[]).map(prepareCreator);
   }
 }
 
@@ -739,6 +827,7 @@ const MODELS: Record<IngestResource, Model<unknown>> = {
   organizations: OrganizationModel as unknown as Model<unknown>,
   media: MediaItemModel as unknown as Model<unknown>,
   guides: GuideModel as unknown as Model<unknown>,
+  creators: CreatorModel as unknown as Model<unknown>,
 };
 
 /**

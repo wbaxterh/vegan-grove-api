@@ -46,7 +46,14 @@ export const APPROVAL_STATUSES = ['private', 'pending', 'approved', 'rejected'] 
 export const BUILT_IN_SOURCES = ['osm', 'user', 'curated'] as const;
 export const REVIEW_STATUSES = ['active', 'removed'] as const;
 
-export const INGEST_RESOURCES = ['places', 'events', 'organizations', 'media', 'guides'] as const;
+export const INGEST_RESOURCES = [
+  'places',
+  'events',
+  'organizations',
+  'media',
+  'guides',
+  'creators',
+] as const;
 export type IngestResource = (typeof INGEST_RESOURCES)[number];
 
 export const ORGANIZATION_TYPES = ['org', 'sanctuary', 'business'] as const;
@@ -117,6 +124,11 @@ export const COMPANION_ROLES = ['user', 'assistant'] as const;
 export const PUSH_PLATFORMS = ['ios', 'android'] as const;
 export const NOTIFICATION_STATUSES = ['pending', 'sent', 'cancelled', 'failed'] as const;
 export const NOTIFICATION_KINDS = ['event_reminder', 'friend_request', 'message'] as const;
+
+export const CREATOR_STATUSES = ['draft', 'published', 'retired'] as const;
+export type CreatorStatus = (typeof CREATOR_STATUSES)[number];
+export const CREATOR_KINDS = ['person', 'duo', 'team'] as const;
+export type CreatorKind = (typeof CREATOR_KINDS)[number];
 
 export const UPLOAD_PURPOSES = ['avatar', 'post', 'place', 'event'] as const;
 export const IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;

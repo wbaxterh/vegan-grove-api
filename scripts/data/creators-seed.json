@@ -1,0 +1,613 @@
+[
+  {
+    "sourceId": "ed-winters",
+    "name": "Ed Winters",
+    "alsoKnownAs": ["Earthling Ed"],
+    "kind": "person",
+    "wikidata": "Q65930940",
+    "bio": "Educator and author who makes the ethical case for veganism through talks, books, and street conversations.",
+    "topics": ["outreach", "animal-rights"],
+    "country": "GB",
+    "languages": ["en"],
+    "website": "https://earthlinged.org/",
+    "socials": {
+      "youtube": "UCVRrGAcUc7cblUzOhI1KfFg",
+      "instagram": "earthlinged",
+      "bluesky": "edwinters.bsky.social"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Ed_Winters",
+      "label": "Wikipedia: English animal rights activist and vegan educator"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q65930940"
+  },
+  {
+    "sourceId": "joey-carbstrong",
+    "name": "Joey Carbstrong",
+    "kind": "person",
+    "wikidata": "Q52416087",
+    "bio": "Australian-born, UK-based activist known for slaughterhouse investigations and direct conversations about animal liberation.",
+    "topics": ["outreach", "animal-rights"],
+    "country": "GB",
+    "languages": ["en"],
+    "socials": {
+      "youtube": "UCG6usHVNuRbexyisxE27nDw",
+      "instagram": "joey_carbstrong",
+      "tiktok": "joey_carbstrong",
+      "x": "joeycarbstrong"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Joey_Carbstrong",
+      "label": "Wikipedia: advocate for animal liberation and veganism"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q52416087"
+  },
+  {
+    "sourceId": "melanie-joy",
+    "name": "Melanie Joy",
+    "kind": "person",
+    "wikidata": "Q6487319",
+    "bio": "Psychologist who named and explained carnism, the belief system that conditions people to eat some animals and not others.",
+    "topics": ["animal-rights", "psychology"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://www.melaniejoy.org/",
+    "socials": {
+      "instagram": "drmelaniejoy",
+      "bluesky": "drmelaniejoy.bsky.social"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Melanie_Joy",
+      "label": "Wikipedia: made a gradual transition to veganism"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q6487319"
+  },
+  {
+    "sourceId": "gary-l-francione",
+    "name": "Gary L. Francione",
+    "kind": "person",
+    "wikidata": "Q458591",
+    "bio": "Legal scholar behind the abolitionist approach, which argues that animals need one right: not to be treated as property.",
+    "topics": ["animal-rights", "philosophy"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://www.abolitionistapproach.com/",
+    "socials": {
+      "x": "garylfrancione",
+      "instagram": "gary.francione"
+    },
+    "veganSource": {
+      "url": "https://www.abolitionistapproach.com/",
+      "label": "Official site: 'Veganism is not a sacrifice; it is a joy.'"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q458591"
+  },
+  {
+    "sourceId": "jane-velez-mitchell",
+    "name": "Jane Velez-Mitchell",
+    "kind": "person",
+    "wikidata": "Q6152880",
+    "bio": "Former TV journalist who founded UnchainedTV, a free nonprofit streaming network for vegan and animal rights stories.",
+    "topics": ["animal-rights", "media"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://unchainedtv.com/",
+    "socials": {
+      "x": "JVM"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Jane_Velez-Mitchell",
+      "label": "Wikipedia: journalist specialising in vegan lifestyles and animal rights"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q6152880"
+  },
+  {
+    "sourceId": "jordi-casamitjana",
+    "name": "Jordi Casamitjana",
+    "kind": "person",
+    "wikidata": "Q106211482",
+    "bio": "Catalan-born zoologist and campaigner whose tribunal case established ethical veganism as a protected belief in Great Britain.",
+    "topics": ["animal-rights", "outreach"],
+    "country": "GB",
+    "languages": ["en", "es", "ca"],
+    "website": "https://jordi-casamitjana.animal-protection-consult.com/",
+    "socials": {
+      "youtube": "user/Jordiwasp",
+      "x": "Jayseecosta",
+      "instagram": "jayseecosta"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Jordi_Casamitjana",
+      "label": "Wikipedia: identifies as an ethical vegan"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q106211482"
+  },
+  {
+    "sourceId": "tabitha-brown",
+    "name": "Tabitha Brown",
+    "kind": "person",
+    "wikidata": "Q91900727",
+    "bio": "Actor and host whose warm, funny short videos made easy vegan cooking feel welcoming to a huge new audience.",
+    "topics": ["cooking"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://www.iamtabithabrown.com/",
+    "socials": {
+      "youtube": "@ItsTabTime",
+      "instagram": "iamtabithabrown",
+      "tiktok": "iamtabithabrown"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Tabitha_Brown_(actress)",
+      "label": "Wikipedia: creates video content incorporating veganism"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q91900727"
+  },
+  {
+    "sourceId": "nisha-vora",
+    "name": "Nisha Vora",
+    "alsoKnownAs": ["Rainbow Plant Life"],
+    "kind": "person",
+    "wikidata": "Q116618131",
+    "bio": "Former lawyer turned recipe developer who tests vegan dishes obsessively so home cooks get big flavor on the first try.",
+    "topics": ["cooking"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://rainbowplantlife.com/",
+    "socials": {
+      "youtube": "UCDbZvuDA_tZ6XP5wKKFuemQ"
+    },
+    "veganSource": {
+      "url": "https://rainbowplantlife.com/about/",
+      "label": "Official site: mission to help you master vegan cooking at home"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q116618131"
+  },
+  {
+    "sourceId": "toni-okamoto",
+    "name": "Toni Okamoto",
+    "alsoKnownAs": ["Plant-Based on a Budget"],
+    "kind": "person",
+    "wikidata": "Q124059614",
+    "bio": "Cookbook author who shows how to eat vegan on a tight grocery budget, and co-hosts a long-running plant-based podcast.",
+    "topics": ["cooking"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://plantbasedonabudget.com/",
+    "podcast": "https://www.plantpoweredpeople.com/",
+    "socials": {},
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Toni_Okamoto",
+      "label": "Wikipedia: American plant-based/vegan cookbook author"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q124059614"
+  },
+  {
+    "sourceId": "bosh",
+    "name": "BOSH!",
+    "kind": "duo",
+    "members": ["Henry Firth", "Ian Theasby"],
+    "wikidata": "Q83751830",
+    "bio": "Two friends from Sheffield who turned fast, crowd-pleasing vegan recipe videos into bestselling cookbooks.",
+    "topics": ["cooking"],
+    "country": "GB",
+    "languages": ["en"],
+    "website": "https://bosh.tv/",
+    "socials": {},
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/BOSH!",
+      "label": "Wikipedia: duo of English vegan chefs"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q83751830"
+  },
+  {
+    "sourceId": "rachel-ama",
+    "name": "Rachel Ama",
+    "kind": "person",
+    "wikidata": "Q130361115",
+    "bio": "London cook whose recipes bring Caribbean and West African home flavors to everyday vegan food.",
+    "topics": ["cooking"],
+    "country": "GB",
+    "languages": ["en"],
+    "website": "https://www.rachelama.com/",
+    "socials": {
+      "youtube": "UCdkRT_G7eqNTytm52zMw40g",
+      "instagram": "rachelama_",
+      "tiktok": "rachelama"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Rachel_Ama",
+      "label": "Wikipedia: English vegan chef"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q130361115"
+  },
+  {
+    "sourceId": "sadia-badiei",
+    "name": "Sadia Badiei",
+    "alsoKnownAs": ["Pick Up Limes"],
+    "kind": "person",
+    "wikidata": "Q116948406",
+    "bio": "Canadian dietitian in the Netherlands whose calm, practical videos pair vegan recipes with sound nutrition basics.",
+    "topics": ["cooking", "nutrition"],
+    "country": "NL",
+    "languages": ["en"],
+    "website": "https://www.pickuplimes.com/",
+    "socials": {
+      "youtube": "c/PickUpLimes",
+      "instagram": "pickuplimes",
+      "tiktok": "pick_up_limes"
+    },
+    "veganSource": {
+      "url": "https://www.pickuplimes.com/about",
+      "label": "Official site: started Pick Up Limes while transitioning to a vegan lifestyle"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q116948406"
+  },
+  {
+    "sourceId": "lauren-toyota",
+    "name": "Lauren Toyota",
+    "alsoKnownAs": ["hot for food"],
+    "kind": "person",
+    "wikidata": "Q6500391",
+    "bio": "Toronto cookbook author behind hot for food, known for indulgent vegan comfort food.",
+    "topics": ["cooking"],
+    "country": "CA",
+    "languages": ["en"],
+    "website": "https://www.hotforfoodblog.com/",
+    "socials": {
+      "youtube": "hotforfoodblog",
+      "instagram": "hotforfood",
+      "tiktok": "hotforfoodblog"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Lauren_Toyota",
+      "label": "Wikipedia: Canadian vegan cookbook author"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q6500391"
+  },
+  {
+    "sourceId": "jenne-claiborne",
+    "name": "Jenné Claiborne",
+    "alsoKnownAs": ["Sweet Potato Soul"],
+    "kind": "person",
+    "bio": "Chef and author who cooks vegan versions of Southern soul food, healthy and affordable.",
+    "topics": ["cooking"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://sweetpotatosoul.com/",
+    "socials": {
+      "youtube": "user/sweetpotatosoul",
+      "instagram": "sweetpotatosoul",
+      "x": "sweetpotatosoul"
+    },
+    "veganSource": {
+      "url": "https://sweetpotatosoul.com/",
+      "label": "Official site: Nutritious, Delicious, and Easy Vegan Recipes"
+    },
+    "sourceUrl": "https://sweetpotatosoul.com/"
+  },
+  {
+    "sourceId": "isa-chandra-moskowitz",
+    "name": "Isa Chandra Moskowitz",
+    "kind": "person",
+    "wikidata": "Q6075696",
+    "bio": "Punk-rooted cookbook author whose Post Punk Kitchen helped define modern home vegan cooking.",
+    "topics": ["cooking"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://www.theppk.com/",
+    "socials": {
+      "instagram": "isachandra",
+      "x": "IsaChandra"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Isa_Chandra_Moskowitz",
+      "label": "Wikipedia: American vegan chef"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q6075696"
+  },
+  {
+    "sourceId": "bryant-terry",
+    "name": "Bryant Terry",
+    "kind": "person",
+    "wikidata": "Q4980617",
+    "bio": "Chef and food justice activist who writes about Black and African diaspora cooking from a vegan kitchen.",
+    "topics": ["cooking", "food-justice"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://www.bryant-terry.com/",
+    "socials": {
+      "instagram": "bryantterry"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Bryant_Terry",
+      "label": "Wikipedia: African-American vegan chef"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q4980617"
+  },
+  {
+    "sourceId": "carlotta-perego",
+    "name": "Carlotta Perego",
+    "alsoKnownAs": ["Cucina Botanica"],
+    "kind": "person",
+    "bio": "Italian cook who shares simple plant-based Italian recipes and nutrition explainers in Italian.",
+    "topics": ["cooking"],
+    "country": "IT",
+    "languages": ["it"],
+    "website": "https://www.cucinabotanica.com/",
+    "socials": {
+      "youtube": "UC0Ng90XAT8I9PAq_tQIiMPQ",
+      "instagram": "cucinabotanica",
+      "tiktok": "cucinabotanica",
+      "x": "cucinabotanica1"
+    },
+    "veganSource": {
+      "url": "https://www.cucinabotanica.com/about",
+      "label": "Official site: 'Mangiare vegetale e sinonimo di mangiare vegano'"
+    },
+    "sourceUrl": "https://www.cucinabotanica.com/"
+  },
+  {
+    "sourceId": "chloe-coscarelli",
+    "name": "Chloe Coscarelli",
+    "kind": "person",
+    "wikidata": "Q5102855",
+    "bio": "Chef and cookbook author who was the first vegan to win a national TV cooking competition.",
+    "topics": ["cooking"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://www.chefchloe.com/",
+    "socials": {
+      "instagram": "chefchloe",
+      "x": "ChloeCoscarelli"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Chloe_Coscarelli",
+      "label": "Wikipedia: vegan chef and author"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q5102855"
+  },
+  {
+    "sourceId": "miyoko-schinner",
+    "name": "Miyoko Schinner",
+    "kind": "person",
+    "wikidata": "Q84766144",
+    "bio": "Pioneer of cultured plant-based cheese who also runs a farm animal sanctuary in Northern California.",
+    "topics": ["cooking", "animal-rights"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://www.ranchocompasion.org/",
+    "socials": {
+      "instagram": "miyokoschinner",
+      "x": "miyokoschinner"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Miyoko_Schinner",
+      "label": "Wikipedia: American-Japanese vegan chef and activist"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q84766144"
+  },
+  {
+    "sourceId": "joanne-lee-molinaro",
+    "name": "Joanne Lee Molinaro",
+    "alsoKnownAs": ["The Korean Vegan"],
+    "kind": "person",
+    "wikidata": "Q106706004",
+    "bio": "Lawyer and James Beard Award-winning author who tells family stories while cooking vegan Korean food.",
+    "topics": ["cooking"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://thekoreanvegan.com/",
+    "socials": {
+      "youtube": "thekoreanvegan",
+      "instagram": "thekoreanvegan",
+      "tiktok": "thekoreanvegan"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Joanne_Lee_Molinaro",
+      "label": "Wikipedia: writes about vegan and plant-based food; The Korean Vegan Cookbook"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q106706004"
+  },
+  {
+    "sourceId": "chef-aj",
+    "name": "Chef AJ",
+    "kind": "person",
+    "wikidata": "Q141622901",
+    "bio": "Los Angeles chef, vegan since 1977, who hosts a daily live show on simple whole-food plant-based cooking.",
+    "topics": ["cooking", "nutrition"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://chefaj.com/",
+    "socials": {
+      "youtube": "c/CHEFAJ",
+      "instagram": "therealchefaj",
+      "x": "therealchefaj"
+    },
+    "veganSource": {
+      "url": "https://www.forksoverknives.com/wellness/weight-loss-warrior-chef-aj-interview/",
+      "label": "Forks Over Knives interview: ethical vegan since 1977"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q141622901"
+  },
+  {
+    "sourceId": "michael-greger",
+    "name": "Michael Greger",
+    "kind": "person",
+    "wikidata": "Q6830782",
+    "bio": "Physician who runs NutritionFacts.org, a nonprofit that summarizes nutrition research in short free videos.",
+    "topics": ["nutrition"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://nutritionfacts.org/",
+    "socials": {
+      "youtube": "UCddn8dUxYdgJz3Qr5mjADtA",
+      "instagram": "nutrition_facts_org",
+      "tiktok": "nutritionfacts_org",
+      "x": "nutrition_facts"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Michael_Greger",
+      "label": "Wikipedia: became a vegan after touring a stockyard"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q6830782"
+  },
+  {
+    "sourceId": "neal-barnard",
+    "name": "Neal Barnard",
+    "kind": "person",
+    "wikidata": "Q6984087",
+    "bio": "Physician and researcher who founded the Physicians Committee for Responsible Medicine and studies plant-based diets.",
+    "topics": ["nutrition"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://www.pcrm.org/",
+    "socials": {
+      "x": "DrNealBarnard"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Neal_D._Barnard",
+      "label": "Wikipedia: researcher of vegan diets, PCRM founder"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q6984087"
+  },
+  {
+    "sourceId": "niko-rittenau",
+    "name": "Niko Rittenau",
+    "kind": "person",
+    "wikidata": "Q86911165",
+    "bio": "Austrian nutrition writer who explains how to plan a healthy vegan diet, mostly in German.",
+    "topics": ["nutrition"],
+    "country": "AT",
+    "languages": ["de"],
+    "website": "https://www.nikorittenau.com/",
+    "socials": {
+      "youtube": "@NikoRittenau",
+      "instagram": "niko_rittenau"
+    },
+    "veganSource": {
+      "url": "https://de.wikipedia.org/wiki/Niko_Rittenau",
+      "label": "German Wikipedia: author of the bestseller Vegan-Klischee ade!"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q86911165"
+  },
+  {
+    "sourceId": "mic-the-vegan",
+    "name": "Mic the Vegan",
+    "kind": "person",
+    "bio": "Science writer who reads nutrition and climate studies on camera and checks headlines against the papers.",
+    "topics": ["nutrition", "environment"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://micthevegan.com/",
+    "socials": {
+      "youtube": "micthevegan",
+      "instagram": "micthevegan",
+      "x": "micthevegan"
+    },
+    "veganSource": {
+      "url": "https://micthevegan.com/",
+      "label": "Official site: Vegan Research Youtuber"
+    },
+    "sourceUrl": "https://micthevegan.com/"
+  },
+  {
+    "sourceId": "rich-roll",
+    "name": "Rich Roll",
+    "kind": "person",
+    "wikidata": "Q130362752",
+    "bio": "Ultra-endurance athlete in Southern California who hosts a long-form podcast on plant-powered health and recovery.",
+    "topics": ["fitness", "nutrition"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://www.richroll.com/",
+    "podcast": "https://www.richroll.com/category/podcast/",
+    "socials": {
+      "youtube": "richroll",
+      "instagram": "richroll",
+      "x": "richroll"
+    },
+    "veganSource": {
+      "url": "https://www.richroll.com/",
+      "label": "Official site: a vegan ultra-endurance athlete"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q130362752"
+  },
+  {
+    "sourceId": "patrik-baboumian",
+    "name": "Patrik Baboumian",
+    "kind": "person",
+    "wikidata": "Q71613",
+    "bio": "Retired strongman who set world records on a vegan diet and campaigns for animals in Germany.",
+    "topics": ["fitness"],
+    "country": "DE",
+    "languages": ["de", "en"],
+    "socials": {
+      "youtube": "UCrnnciiWG-V2FcblCfv_Hsg"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Patrik_Baboumian",
+      "label": "Wikipedia: strongman who promotes veganism"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q71613"
+  },
+  {
+    "sourceId": "scott-jurek",
+    "name": "Scott Jurek",
+    "kind": "person",
+    "wikidata": "Q194843",
+    "bio": "Ultramarathon runner and author who has raced on a vegan diet since 1999.",
+    "topics": ["fitness"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://www.scottjurek.com/",
+    "socials": {
+      "instagram": "scottjurek",
+      "x": "scottjurek"
+    },
+    "veganSource": {
+      "url": "https://en.wikipedia.org/wiki/Scott_Jurek",
+      "label": "Wikipedia: vegan diet since 1999"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q194843"
+  },
+  {
+    "sourceId": "dotsie-bausch",
+    "name": "Dotsie Bausch",
+    "kind": "person",
+    "wikidata": "Q290670",
+    "bio": "Olympic medalist cyclist who founded Switch4Good to challenge dairy marketing aimed at athletes.",
+    "topics": ["fitness", "nutrition"],
+    "country": "US",
+    "languages": ["en"],
+    "website": "https://dotsiebauschusa.com/",
+    "socials": {
+      "x": "DotsieBausch"
+    },
+    "veganSource": {
+      "url": "https://dotsiebauschusa.com/about",
+      "label": "Official site: named one of the most influential vegans by VegNews"
+    },
+    "sourceUrl": "https://www.wikidata.org/wiki/Q290670"
+  },
+  {
+    "sourceId": "derek-simnett",
+    "name": "Derek Simnett",
+    "alsoKnownAs": ["Simnett Nutrition"],
+    "kind": "person",
+    "bio": "Canadian nutritionist who shares calisthenics training and high-protein vegan meals.",
+    "topics": ["fitness", "nutrition"],
+    "country": "CA",
+    "languages": ["en"],
+    "website": "https://simnettnutrition.com/",
+    "socials": {
+      "youtube": "UCpyhJZhJQWKDdJCR07jPY-Q",
+      "instagram": "simnettnutrition"
+    },
+    "veganSource": {
+      "url": "https://simnettnutrition.com/about/",
+      "label": "Official site: Meet Your Vegan Nutritionist"
+    },
+    "sourceUrl": "https://simnettnutrition.com/"
+  }
+]

@@ -6,8 +6,20 @@ import { idParams, paginationQuery } from '../lib/schemas.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import { getValidated, validate } from '../middleware/validate.js';
-import { GUIDE_CATEGORIES, PUBLISH_STATUSES, REPORT_STATUSES } from '../models/index.js';
-import { mediaItemSchema } from '../services/ingest.js';
+import {
+  CREATOR_KINDS,
+  CREATOR_STATUSES,
+  GUIDE_CATEGORIES,
+  PUBLISH_STATUSES,
+  REPORT_STATUSES,
+} from '../models/index.js';
+import {
+  adminCreateCreator,
+  adminDeleteCreator,
+  adminListCreators,
+  adminUpdateCreator,
+} from '../services/creators.js';
+import { creatorItemSchema, mediaItemSchema } from '../services/ingest.js';
 import {
   adminCreateCollection,
   adminCreateMedia,
@@ -62,6 +74,37 @@ const guideBody = z
   .strict();
 
 const reportPatchBody = z.object({ status: z.enum(REPORT_STATUSES) }).strict();
+
+const creatorBody = creatorItemSchema
+  .omit({ sourceId: true, sourceUrl: true, wikidata: true })
+  .extend({
+    kind: z.enum(CREATOR_KINDS).optional(),
+    externalIds: z
+      .object({
+        wikidata: z
+          .string()
+          .regex(/^Q\d{1,19}$/)
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    relatedGuideIds: z
+      .array(z.string().regex(/^[a-f\d]{24}$/))
+      .max(50)
+      .optional(),
+    relatedMediaIds: z
+      .array(z.string().regex(/^[a-f\d]{24}$/))
+      .max(50)
+      .optional(),
+    status: z.enum(CREATOR_STATUSES).optional(),
+    reviewedAt: z.coerce.date().optional(),
+  })
+  .strict();
+
+const adminCreatorQuery = paginationQuery.extend({
+  status: z.enum(CREATOR_STATUSES).optional(),
+  q: z.string().trim().min(2).max(80).optional(),
+});
 
 /**
  * Admin surface. `requireAdmin` runs after `requireAuth`, which loaded the
@@ -135,6 +178,33 @@ export function adminRouter(deps: AppDeps): Router {
   router.delete('/media/:id', validate({ params: idParams }), async (req, res) => {
     const { params } = getValidated<{ params: z.infer<typeof idParams> }>(req);
     if (!(await adminDeleteMedia(params.id))) throw notFound('Media item not found.');
+    res.status(204).end();
+  });
+
+  router.get('/creators', validate({ query: adminCreatorQuery }), async (req, res) => {
+    const { query } = getValidated<{ query: z.infer<typeof adminCreatorQuery> }>(req);
+    res.json(await adminListCreators(query));
+  });
+  router.post('/creators', validate({ body: creatorBody }), async (req, res) => {
+    const { body } = getValidated<{ body: z.infer<typeof creatorBody> }>(req);
+    res.status(201).json({ creator: await adminCreateCreator(body) });
+  });
+  router.patch(
+    '/creators/:id',
+    validate({ params: idParams, body: creatorBody.partial() }),
+    async (req, res) => {
+      const { params, body } = getValidated<{
+        params: z.infer<typeof idParams>;
+        body: Partial<z.infer<typeof creatorBody>>;
+      }>(req);
+      const creator = await adminUpdateCreator(params.id, body);
+      if (!creator) throw notFound('Creator not found.');
+      res.json({ creator });
+    },
+  );
+  router.delete('/creators/:id', validate({ params: idParams }), async (req, res) => {
+    const { params } = getValidated<{ params: z.infer<typeof idParams> }>(req);
+    if (!(await adminDeleteCreator(params.id))) throw notFound('Creator not found.');
     res.status(204).end();
   });
 

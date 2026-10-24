@@ -452,5 +452,50 @@ describe('POST /api/ingest/:resource', () => {
       expect(guides.body.inserted).toBe(1);
       expect((await GuideModel.findOne({ sourceId: 'first-visit' }))?.status).toBe('draft');
     });
+
+    it('lands an Open Library book as a draft and upserts it in place', async () => {
+      const book = {
+        sourceId: 'OL24340920W',
+        title: 'Animal Liberation',
+        kind: 'book',
+        year: 1975,
+        authors: ['Peter Singer'],
+        externalIds: { openLibrary: 'OL24340920W', isbn: '9780061711305' },
+        sourceUrl: 'https://openlibrary.org/works/OL24340920W',
+        tags: ['open-library', 'veganism'],
+        posterKey: 'media/posters/OL24340920W.jpg',
+      };
+      const created = await supertest(ctx.app)
+        .post('/api/ingest/media')
+        .set(withKey)
+        .send({ source: 'openlibrary', items: [book] });
+      expect(created.status).toBe(200);
+      expect(created.body).toMatchObject({ inserted: 1, rejected: [] });
+      const row = await MediaItemModel.findOne({ sourceId: 'OL24340920W' }).lean();
+      expect(row).toMatchObject({
+        status: 'draft',
+        kind: 'book',
+        authors: ['Peter Singer'],
+        year: 1975,
+        slug: 'animal-liberation-1975',
+        externalIds: { openLibrary: 'OL24340920W', isbn: '9780061711305' },
+        posterKey: 'media/posters/OL24340920W.jpg',
+      });
+      expect((await supertest(ctx.app).get('/api/media/animal-liberation-1975')).status).toBe(404);
+
+      const again = await supertest(ctx.app)
+        .post('/api/ingest/media')
+        .set(withKey)
+        .send({
+          source: 'openlibrary',
+          items: [
+            { ...book, year: 1976 },
+            { ...book, sourceId: 'OL2W', title: 'Second' },
+          ],
+        });
+      expect(again.body).toMatchObject({ inserted: 1, updated: 1 });
+      expect(await MediaItemModel.countDocuments({ source: 'openlibrary' })).toBe(2);
+      expect((await MediaItemModel.findOne({ sourceId: 'OL24340920W' }).lean())?.year).toBe(1976);
+    });
   });
 });

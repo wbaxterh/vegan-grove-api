@@ -67,7 +67,7 @@ npm run validate        # biome check, tsc --noEmit, vitest run, tsc build
 | `npm run lint:fix` | `biome check --write .` |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run validate` | lint, typecheck, test, build: the CI contract and the PR gate |
-| `npm run seed:places:osm` | Overpass importer for `diet:vegan` places in the SoCal bbox; `-- --dry-run` prints counts only, a real run upserts by `(source, sourceId)` through the ingest service as `pending` (`-- --approve` lands approved) and never resets a moderated row or an admin-edited field. Skips fast food unless fully vegan, flags chains, maps hours, phone, website, postcode, cuisine and access tags |
+| `npm run seed:places:osm` | Overpass importer for `diet:vegan` places and named farmers/produce markets (`amenity=marketplace`) in the SoCal bbox. Markets land as `grocery` with the tag `market:farmers`. Bars and pubs are venues; food courts are restaurants; fast food is skipped unless fully vegan. `-- --dry-run` prints counts only. A real run upserts by `(source, sourceId)` through the ingest service as `pending` unless `osm` is in `TRUSTED_SOURCES`, and never resets a moderated row or an admin-edited field. Flags chains (markets never), maps hours, phone, website, postcode, cuisine and access tags. ODbL |
 | `npm run seed:places:gardens` | Same pipeline for OSM community gardens (`leisure=garden` + `garden:type=community`) and named allotments, as type `garden`, fully vegan. Both OSM seeds query Overpass per 0.25 degree tile with retries and fall back to overpass-api.de |
 | `npm run seed:sanctuaries` | Curated sanctuaries from `scripts/data/sanctuaries.json`, approved on insert |
 | `npm run seed:groves` | The ten regional Groves, one per home area, idempotent by slug |
@@ -79,6 +79,7 @@ npm run validate        # biome check, tsc --noEmit, vitest run, tsc build
 | `npm run ingest:media:wikidata` | Curated seed (`scripts/data/media-seed.json`, ids completed from Wikidata) plus one SPARQL discovery query, both to `/api/ingest/media`; caches both batches for the TMDB step |
 | `npm run ingest:media:seed` | The curated seed alone, no discovery |
 | `npm run ingest:media:tmdb` | Synopsis, tagline, poster and backdrop (to S3), runtime, directors, featured people, genres, rating, US content rating, the official YouTube trailer id and JustWatch-attributed watch providers for items with a TMDB id; needs `TMDB_API_KEY` |
+| `npm run ingest:media:openlibrary` | Open Library search (CC0) for the subjects veganism and animal rights. Books land as kind `book` (title, authors, year, ISBN, link to the work) under source `openlibrary`, as drafts unless that source is trusted. Covers are downloaded, EXIF-stripped, and stored in `S3_MEDIA_BUCKET`; the API never receives a remote image URL. One request per second |
 | `npm run seed:media:collections` | Upserts the library shelves in `scripts/data/media-collections.json`, sets `featured` from the seed, and with `--prune-duplicates` removes a second copy of a curated title; runs on the host, needs the database |
 | `npm run ingest:guides` | Guide drafts from `scripts/data/guides.json` to `/api/ingest/guides`, landing as `draft` |
 | `npm run ingest:places:osm`, `ingest:places:gardens`, `ingest:sanctuaries` | Aliases for the three seed scripts, using the names from the ingest contract |

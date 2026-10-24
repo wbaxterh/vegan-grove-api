@@ -1,5 +1,12 @@
 import { type HydratedDocument, type InferSchemaType, model, Schema } from 'mongoose';
-import { MEDIA_ACTION_TYPES, MEDIA_KINDS, PUBLISH_STATUSES, WATCH_ACCESS } from './enums.js';
+import {
+  MEDIA_ACTION_TYPES,
+  MEDIA_KINDS,
+  MEDIA_YEAR_MAX,
+  MEDIA_YEAR_MIN,
+  PUBLISH_STATUSES,
+  WATCH_ACCESS,
+} from './enums.js';
 import { provenanceFields, provenanceIndex } from './provenance.js';
 
 const watchLinkSchema = new Schema(
@@ -38,17 +45,19 @@ const externalIdsSchema = new Schema(
     tmdb: { type: String, maxlength: 20 },
     wikidata: { type: String, maxlength: 20 },
     imdb: { type: String, maxlength: 20 },
+    isbn: { type: String, maxlength: 13 },
+    openLibrary: { type: String, maxlength: 20 },
   },
   { _id: false },
 );
 
-/** Documentaries, films and talks. Trailers embed via youtube-nocookie.com, click to load. */
+/** Films, talks and books. Trailers embed via youtube-nocookie.com, click to load. */
 const mediaItemSchema = new Schema(
   {
     title: { type: String, required: true, trim: true, maxlength: 160 },
     slug: { type: String, required: true },
     kind: { type: String, enum: MEDIA_KINDS, required: true },
-    year: { type: Number, min: 1900, max: 2100 },
+    year: { type: Number, min: MEDIA_YEAR_MIN, max: MEDIA_YEAR_MAX },
     synopsis: { type: String, default: '', maxlength: 4000 },
     tagline: { type: String, maxlength: 300 },
     posterKey: { type: String },
@@ -57,6 +66,7 @@ const mediaItemSchema = new Schema(
     runtimeMinutes: { type: Number, min: 1, max: 1000 },
     releaseDate: { type: String, match: /^\d{4}-\d{2}-\d{2}$/ },
     directors: { type: [String], default: [] },
+    authors: { type: [String], default: [] },
     featuring: { type: [String], default: [] },
     genres: { type: [String], default: [] },
     rating: { type: Number, min: 0, max: 10 },

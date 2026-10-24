@@ -5,7 +5,12 @@ import { notFound } from '../lib/errors.js';
 import { idParams, paginationQuery, slugParams } from '../lib/schemas.js';
 import { currentUser, optionalAuth, requireAuth } from '../middleware/auth.js';
 import { getValidated, validate } from '../middleware/validate.js';
-import { MEDIA_KINDS, MEDIA_REACTION_TYPES } from '../models/index.js';
+import {
+  MEDIA_KINDS,
+  MEDIA_REACTION_TYPES,
+  MEDIA_YEAR_MAX,
+  MEDIA_YEAR_MIN,
+} from '../models/index.js';
 import {
   getCollectionBySlug,
   getMediaBySlug,
@@ -24,7 +29,7 @@ const listQuery = paginationQuery.extend({
   q: z.string().trim().min(2).max(80).optional(),
   kind: z.enum(MEDIA_KINDS).optional(),
   tag: z.string().trim().min(1).max(60).optional(),
-  year: z.coerce.number().int().min(1900).max(2100).optional(),
+  year: z.coerce.number().int().min(MEDIA_YEAR_MIN).max(MEDIA_YEAR_MAX).optional(),
   free: z
     .enum(['1', 'true', '0', 'false'])
     .transform((v) => v === '1' || v === 'true')

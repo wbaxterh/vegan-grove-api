@@ -17,6 +17,8 @@ import {
   type IngestResource,
   MEDIA_ACTION_TYPES,
   MEDIA_KINDS,
+  MEDIA_YEAR_MAX,
+  MEDIA_YEAR_MIN,
   MediaItemModel,
   ORGANIZATION_TYPES,
   OrganizationModel,
@@ -120,7 +122,7 @@ export const mediaItemSchema = z
     sourceId: sourceIdSchema,
     title: z.string().trim().min(1).max(160),
     kind: z.enum(MEDIA_KINDS),
-    year: z.number().int().min(1900).max(2100).optional(),
+    year: z.number().int().min(MEDIA_YEAR_MIN).max(MEDIA_YEAR_MAX).optional(),
     synopsis: z.string().trim().max(4000).optional(),
     tagline: z.string().trim().max(300).optional(),
     // S3 keys the script already uploaded: path segments and an image extension, no `..`.
@@ -132,6 +134,7 @@ export const mediaItemSchema = z
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .optional(),
     directors: z.array(z.string().trim().min(1).max(100)).max(10).optional(),
+    authors: z.array(z.string().trim().min(1).max(100)).max(10).optional(),
     featuring: z.array(z.string().trim().min(1).max(100)).max(12).optional(),
     genres: z.array(z.string().trim().min(1).max(40)).max(10).optional(),
     rating: z.number().min(0).max(10).optional(),
@@ -186,6 +189,14 @@ export const mediaItemSchema = z
         imdb: z
           .string()
           .regex(/^tt\d{1,18}$/)
+          .optional(),
+        isbn: z
+          .string()
+          .regex(/^(?:\d{13}|\d{9}[\dX])$/)
+          .optional(),
+        openLibrary: z
+          .string()
+          .regex(/^OL\d{1,16}W$/)
           .optional(),
       })
       .strict()
@@ -697,6 +708,7 @@ function prepareMedia(item: MediaItemInput): PreparedRow {
       runtimeMinutes: item.runtimeMinutes,
       releaseDate: item.releaseDate,
       directors: item.directors,
+      authors: item.authors,
       featuring: item.featuring,
       genres: item.genres,
       rating: item.rating,

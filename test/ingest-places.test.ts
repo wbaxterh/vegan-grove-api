@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import curatedGardens from '../scripts/data/gardens-curated.json' with { type: 'json' };
 import sanctuaries from '../scripts/data/sanctuaries.json' with { type: 'json' };
 import { mapGarden } from '../scripts/seed-places-gardens.js';
-import { mapVeganFeature } from '../scripts/seed-places-osm.js';
+import {
+  isFarmersMarket,
+  mapFarmersMarket,
+  mapOsmPlace,
+  mapVeganFeature,
+  osmPlacesQuery,
+} from '../scripts/seed-places-osm.js';
 import { type PlaceItem, placeItemSchema } from '../src/services/ingest.js';
 
 function slugify(name: string): string {
@@ -177,6 +183,141 @@ describe('OSM places mapping', () => {
     };
     const item = mapVeganFeature(element);
     expect(item).toBeNull();
+  });
+
+  it('keeps diet:vegan bars, pubs, and food courts', () => {
+    const bar = mapOsmPlace(node(1, { name: 'Kind Bar', amenity: 'bar', 'diet:vegan': 'yes' }));
+    const pub = mapOsmPlace(node(2, { name: 'Kind Pub', amenity: 'pub', 'diet:vegan': 'only' }));
+    const court = mapOsmPlace(
+      node(3, { name: 'Kind Court', amenity: 'food_court', 'diet:vegan': 'yes' }),
+    );
+    expect(bar).toMatchObject({ type: 'venue', veganLevel: 'options' });
+    expect(pub).toMatchObject({ type: 'venue', veganLevel: 'full' });
+    expect(court).toMatchObject({ type: 'restaurant', veganLevel: 'options' });
+    for (const item of [bar, pub, court]) {
+      expect(placeItemSchema.safeParse(item).success).toBe(true);
+    }
+  });
+
+  it('asks Overpass for diet:vegan features and named marketplaces together', () => {
+    const query = osmPlacesQuery('32.5,-119.5,34.9,-116.0');
+    expect(query).toContain('diet:vegan');
+    expect(query).toContain('amenity"="marketplace"');
+    expect(query).toContain('["name"]');
+    expect(query).toContain('out center tags');
+  });
+});
+
+function node(
+  id: number,
+  tags: Record<string, string>,
+  point: { lat: number; lon: number } | null = { lat: 34.05, lon: -118.24 },
+) {
+  return {
+    type: 'node' as const,
+    id,
+    ...(point ?? {}),
+    tags,
+  };
+}
+
+describe('OSM farmers markets', () => {
+  it('maps a marketplace=farmers feature to a grocery with the farmers tag', () => {
+    const item = mapFarmersMarket(
+      node(42, {
+        name: 'Hollywood Market',
+        amenity: 'marketplace',
+        marketplace: 'farmers',
+        opening_hours: 'Su 08:00-13:00',
+        website: 'https://market.example.com',
+        'addr:city': 'Los Angeles',
+        brand: 'MarketCo',
+      }),
+    );
+    expect(item).toMatchObject({
+      sourceId: 'node/42',
+      type: 'grocery',
+      veganLevel: 'options',
+      chain: false,
+      hours: 'Su 08:00-13:00',
+      city: 'Los Angeles',
+      description: 'Farmers market in Los Angeles.',
+      sourceUrl: 'https://www.openstreetmap.org/node/42',
+    });
+    expect(item?.tags).toEqual(expect.arrayContaining(['osm', 'market:farmers']));
+    expect(item?.website).toBe('https://market.example.com/');
+    expect(placeItemSchema.safeParse(item).success).toBe(true);
+  });
+
+  it('keeps produce markets and drops flea, craft, and unnamed ones', () => {
+    const keep: Record<string, string>[] = [
+      { marketplace: 'farmers', name: 'Town Square' },
+      { marketplace: 'farmers-market', name: 'Weekly' },
+      { 'marketplace:type': 'produce', name: 'Wednesday stalls' },
+      { name: "Santa Monica Farmers' Market" },
+      { name: 'Valley Produce Market' },
+      { name: 'Hollywood Greenmarket' },
+      { name: 'Riverside Farm Stand' },
+      { name: 'Certified Farmers’ Market' },
+      { marketplace: 'flea_market', name: "Valley Farmers' Market" },
+    ];
+    for (const tags of keep) {
+      expect(isFarmersMarket({ amenity: 'marketplace', ...tags }), JSON.stringify(tags)).toBe(true);
+    }
+
+    const drop: Record<string, string>[] = [
+      { marketplace: 'flea_market', name: 'Sunday Flea Market' },
+      { name: 'Downtown Market' },
+      { marketplace: 'craft', name: 'Craft Market' },
+      { marketplace: 'antique', name: 'Antique Market' },
+      { name: '' },
+    ];
+    for (const tags of drop) {
+      expect(isFarmersMarket({ amenity: 'marketplace', ...tags }), JSON.stringify(tags)).toBe(
+        false,
+      );
+    }
+    expect(
+      isFarmersMarket({ amenity: 'restaurant', name: 'Farmers Market Cafe', 'diet:vegan': 'yes' }),
+    ).toBe(false);
+  });
+
+  it('does not relabel a vegan restaurant whose name mentions a farmers market', () => {
+    const item = mapOsmPlace(
+      node(7, { name: 'Farmers Market Cafe', amenity: 'restaurant', 'diet:vegan': 'yes' }),
+    );
+    expect(item).toMatchObject({ type: 'restaurant', veganLevel: 'options' });
+    expect(item?.tags).not.toContain('market:farmers');
+  });
+
+  it('marks a diet:vegan=only market fully vegan and keeps an OSM description', () => {
+    const full = mapOsmPlace(
+      node(8, {
+        name: 'Plant Market',
+        amenity: 'marketplace',
+        marketplace: 'farmers',
+        'diet:vegan': 'only',
+      }),
+    );
+    expect(full).toMatchObject({
+      veganLevel: 'full',
+      description: 'Fully vegan farmers market.',
+    });
+
+    const described = mapFarmersMarket(
+      node(9, {
+        name: 'Saturday Produce Market',
+        amenity: 'marketplace',
+        description: 'Saturday produce market.',
+        'addr:city': 'Long Beach',
+      }),
+    );
+    expect(described?.description).toBe('Saturday produce market.');
+    expect(
+      mapFarmersMarket(
+        node(10, { name: 'No Point Market', amenity: 'marketplace', marketplace: 'farmers' }, null),
+      ),
+    ).toBeNull();
   });
 });
 

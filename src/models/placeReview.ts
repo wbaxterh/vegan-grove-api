@@ -17,6 +17,14 @@ const placeReviewSchema = new Schema(
 
 placeReviewSchema.index({ placeId: 1, status: 1, _id: -1 });
 placeReviewSchema.index({ userId: 1 }, { sparse: true });
+// One live review per member per place. Removed rows and detached accounts drop out.
+placeReviewSchema.index(
+  { placeId: 1, userId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { userId: { $type: 'objectId' }, status: 'active' },
+  },
+);
 
 export type PlaceReview = InferSchemaType<typeof placeReviewSchema>;
 export type PlaceReviewDoc = HydratedDocument<PlaceReview>;

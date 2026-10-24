@@ -29,7 +29,7 @@ describe('not-yet-implemented routes', () => {
     await ctx.close();
   });
 
-  const publicGets = ['/api/handles/someone/posts', '/api/places/000000000000000000000000/reviews'];
+  const publicGets = ['/api/handles/someone/posts'];
 
   it.each(publicGets)('GET %s answers 501 not_implemented', async (path) => {
     const res = await supertest(ctx.app).get(path);
@@ -40,7 +40,6 @@ describe('not-yet-implemented routes', () => {
   });
 
   const authedGets = [
-    '/api/place-lists',
     '/api/friends',
     '/api/friends/requests',
     '/api/feed',
@@ -58,7 +57,7 @@ describe('not-yet-implemented routes', () => {
     expect(res.body.error.code).toBe('not_implemented');
   });
 
-  it('validates bodies before answering 501', async () => {
+  it('validates bodies before the handler runs', async () => {
     const bad = await supertest(ctx.app).post('/api/posts').set(bearer(member.token)).send({});
     expect(bad.status).toBe(400);
     expect(bad.body.error.code).toBe('validation_error');
@@ -73,7 +72,15 @@ describe('not-yet-implemented routes', () => {
       .post('/api/reports')
       .set(bearer(member.token))
       .send({ targetType: 'post', targetId: '000000000000000000000000', reason: 'spam' });
-    expect(report.status).toBe(501);
+    expect(report.status).toBe(201);
+    expect(report.body.report).toMatchObject({
+      targetType: 'post',
+      targetId: '000000000000000000000000',
+      reason: 'spam',
+      status: 'open',
+    });
+    expect(report.body.report.reportedBy).toBeUndefined();
+    expect(JSON.stringify(report.body)).not.toContain(member.email);
 
     const presign = await supertest(ctx.app)
       .post('/api/uploads/image/presign')

@@ -1,6 +1,9 @@
 import { type HydratedDocument, type InferSchemaType, model, Schema } from 'mongoose';
 
-/** A member's saved places. Private unless the owner flips `isPublic`. */
+/**
+ * A member's saved places. Reads are owner-only. `isPublic` is stored for a
+ * later friends-sharing milestone and does not widen who can read the list.
+ */
 const placeListSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },

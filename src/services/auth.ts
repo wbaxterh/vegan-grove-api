@@ -14,6 +14,7 @@ import {
   MessageModel,
   NotificationPreferencesModel,
   OrganizationModel,
+  PlaceCheckInModel,
   PlaceListModel,
   PlaceModel,
   PlaceReviewModel,
@@ -221,7 +222,8 @@ export function toPrivateUser(user: UserDoc) {
 
 /**
  * Spec rule 10: hard delete. Everything the member authored goes; the public
- * catalogue rows they contributed (places, reviews, reports) stay, detached.
+ * catalogue rows they contributed (places, reviews, check-ins, reports) stay, detached.
+ * A detached review has `showHandle` forced off so the handle cannot outlive the account.
  * Order matters only for readability: each step is idempotent.
  */
 export async function deleteAccount(userId: Types.ObjectId): Promise<void> {
@@ -253,7 +255,8 @@ export async function deleteAccount(userId: Types.ObjectId): Promise<void> {
     NotificationPreferencesModel.deleteMany({ userId }),
     ScheduledNotificationModel.deleteMany({ userId }),
     PlaceModel.updateMany({ submittedBy: userId }, { $unset: { submittedBy: 1 } }),
-    PlaceReviewModel.updateMany({ userId }, { $unset: { userId: 1 } }),
+    PlaceReviewModel.updateMany({ userId }, { $unset: { userId: 1 }, $set: { showHandle: false } }),
+    PlaceCheckInModel.updateMany({ userId }, { $unset: { userId: 1 } }),
     ReportModel.updateMany({ reportedBy: userId }, { $unset: { reportedBy: 1 } }),
     EventModel.updateMany({ createdBy: userId }, { $unset: { createdBy: 1 } }),
     OrganizationModel.updateMany({ adminUserIds: userId }, { $pull: { adminUserIds: userId } }),

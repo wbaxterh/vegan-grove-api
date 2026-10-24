@@ -12,6 +12,7 @@ import {
   GUIDE_CATEGORIES,
   PUBLISH_STATUSES,
   REPORT_STATUSES,
+  REVIEW_STATUSES,
 } from '../models/index.js';
 import {
   adminCreateCreator,
@@ -29,6 +30,7 @@ import {
   adminUpdateCollection,
   adminUpdateMedia,
 } from '../services/media.js';
+import { adminListReviews, setReviewStatus } from '../services/placeReviews.js';
 import { listPendingPlaces, setPlaceApproval } from '../services/places.js';
 
 // The ingest item shape is the editorial shape; admins add what a bot never may.
@@ -74,6 +76,10 @@ const guideBody = z
   .strict();
 
 const reportPatchBody = z.object({ status: z.enum(REPORT_STATUSES) }).strict();
+const reviewStatusBody = z.object({ status: z.enum(REVIEW_STATUSES) }).strict();
+const adminReviewQuery = paginationQuery.extend({
+  status: z.enum(REVIEW_STATUSES).optional(),
+});
 
 const creatorBody = creatorItemSchema
   .omit({ sourceId: true, sourceUrl: true, wikidata: true })
@@ -207,6 +213,25 @@ export function adminRouter(deps: AppDeps): Router {
     if (!(await adminDeleteCreator(params.id))) throw notFound('Creator not found.');
     res.status(204).end();
   });
+
+  // Review moderation. The author stays hidden; `showHandle` is the only name that leaves.
+  router.get('/reviews', validate({ query: adminReviewQuery }), async (req, res) => {
+    const { query } = getValidated<{ query: z.infer<typeof adminReviewQuery> }>(req);
+    res.json(await adminListReviews(query));
+  });
+  router.put(
+    '/reviews/:id',
+    validate({ params: idParams, body: reviewStatusBody }),
+    async (req, res) => {
+      const { params, body } = getValidated<{
+        params: z.infer<typeof idParams>;
+        body: z.infer<typeof reviewStatusBody>;
+      }>(req);
+      const review = await setReviewStatus(params.id, body.status);
+      if (!review) throw notFound('Review not found.');
+      res.json({ review });
+    },
+  );
 
   // TODO(m2): guide CRUD, report queue.
 

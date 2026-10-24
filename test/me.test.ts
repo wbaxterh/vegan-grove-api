@@ -2,6 +2,7 @@ import supertest from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import {
   CompanionConversationModel,
+  PlaceCheckInModel,
   PlaceModel,
   PlaceReviewModel,
   SessionModel,
@@ -126,7 +127,18 @@ describe('/api/me', () => {
           location: { lng: -118.19, lat: 33.77 },
         });
       expect(submitted.status).toBe(201);
-      await PlaceReviewModel.create({ placeId: submitted.body.place.id, userId: id, rating: 5 });
+      await PlaceReviewModel.create({
+        placeId: submitted.body.place.id,
+        userId: id,
+        rating: 5,
+        showHandle: true,
+      });
+      await PlaceCheckInModel.create({
+        placeId: submitted.body.place.id,
+        userId: id,
+        month: '2026-10',
+        veganLevel: 'full',
+      });
       await CompanionConversationModel.create({ userId: id, messages: [] });
 
       const res = await supertest(ctx.app).delete('/api/me').set(bearer(token));
@@ -142,6 +154,10 @@ describe('/api/me', () => {
       const review = await PlaceReviewModel.findOne({ placeId: submitted.body.place.id });
       expect(review).not.toBeNull();
       expect(review?.userId).toBeUndefined();
+      expect(review?.showHandle).toBe(false);
+      const checkIn = await PlaceCheckInModel.findOne({ placeId: submitted.body.place.id });
+      expect(checkIn).not.toBeNull();
+      expect(checkIn?.userId).toBeUndefined();
 
       const after = await supertest(ctx.app).get('/api/me').set(bearer(token));
       expect(after.status).toBe(401);

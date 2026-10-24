@@ -31,8 +31,17 @@ const placeSchema = new Schema(
     ...provenanceFields('user'),
     /** Kept for compatibility with the first import; equals `sourceId` on OSM rows. */
     osmId: { type: String },
+    /** Derived from active reviews. Never a permission check. */
     ratingAvg: { type: Number, default: 0 },
     reviewCount: { type: Number, default: 0 },
+    /** Derived from anonymous check-ins. The count is public; the rows are not. */
+    checkInCount: { type: Number, default: 0, min: 0 },
+    latestCheckInMonth: { type: String, match: /^\d{4}-(0[1-9]|1[0-2])$/ },
+    /**
+     * Timestamp of the newest check-in whose vegan level matches this place.
+     * Drives the verified/unverified state. Never serialized.
+     */
+    lastAgreeingCheckInAt: { type: Date },
   },
   { timestamps: true, collection: 'places' },
 );

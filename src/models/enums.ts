@@ -86,7 +86,14 @@ export const REPORT_STATUSES = ['open', 'reviewing', 'resolved', 'dismissed'] as
 
 export const MESSAGE_TYPES = ['text', 'shared'] as const;
 
-export const MEDIA_KINDS = ['documentary', 'film', 'series', 'talk', 'short'] as const;
+/**
+ * Catalogue year bounds. Books in the library go back centuries, so the floor
+ * is earlier than the first films.
+ */
+export const MEDIA_YEAR_MIN = 1000;
+export const MEDIA_YEAR_MAX = 2100;
+
+export const MEDIA_KINDS = ['documentary', 'film', 'series', 'talk', 'short', 'book'] as const;
 export type MediaKind = (typeof MEDIA_KINDS)[number];
 /** "This moved me" and "I took action": the two low-friction reactions on a title. */
 export const MEDIA_REACTION_TYPES = ['moved', 'acted'] as const;

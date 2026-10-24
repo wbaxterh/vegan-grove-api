@@ -26,6 +26,7 @@ STEPS=(
   "ingest:media:seed"
   "ingest:media:wikidata"
   "ingest:media:tmdb"
+  "ingest:media:openlibrary"
   "seed:media:collections --prune-duplicates"
   "ingest:guides"
 )

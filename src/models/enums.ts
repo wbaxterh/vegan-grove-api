@@ -45,6 +45,7 @@ export const APPROVAL_STATUSES = ['private', 'pending', 'approved', 'rejected'] 
  */
 export const BUILT_IN_SOURCES = ['osm', 'user', 'curated'] as const;
 export const REVIEW_STATUSES = ['active', 'removed'] as const;
+export type ReviewStatus = (typeof REVIEW_STATUSES)[number];
 
 export const INGEST_RESOURCES = [
   'places',
@@ -82,6 +83,7 @@ export const COMMENT_STATUSES = ['active', 'removed'] as const;
 export const REACTION_TYPES = ['love'] as const;
 
 export const REPORT_TARGETS = ['post', 'comment', 'place', 'review', 'user', 'message'] as const;
+export type ReportTarget = (typeof REPORT_TARGETS)[number];
 export const REPORT_STATUSES = ['open', 'reviewing', 'resolved', 'dismissed'] as const;
 
 export const MESSAGE_TYPES = ['text', 'shared'] as const;

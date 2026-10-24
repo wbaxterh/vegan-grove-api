@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import type { AppDeps } from '../lib/deps.js';
-import { notFound, notImplemented } from '../lib/errors.js';
+import { notFound } from '../lib/errors.js';
 import { bboxSchema, idParams, paginationQuery, pointInput, slugParams } from '../lib/schemas.js';
-import { currentUser, requireAuth } from '../middleware/auth.js';
+import { currentUser, optionalAuth, requireAuth } from '../middleware/auth.js';
 import { getValidated, validate } from '../middleware/validate.js';
 import { HOME_AREAS, PLACE_TYPES, type PlaceType, VEGAN_LEVELS } from '../models/index.js';
+import { createCheckIn, getCheckInSummary } from '../services/checkIns.js';
+import { createReview, listReviews } from '../services/placeReviews.js';
 import {
   getApprovedPlaceBySlug,
   listApprovedPlaces,
@@ -83,6 +85,15 @@ const reviewBody = z
   })
   .strict();
 
+const checkInBody = z
+  .object({
+    veganLevel: z.enum(VEGAN_LEVELS),
+    rating: z.number().int().min(1).max(5).optional(),
+  })
+  .strict();
+
+const PUBLIC_CACHE = 'public, max-age=60';
+
 /** The map. Reads are public and approved-only; submissions queue for moderation. */
 export function placesRouter(deps: AppDeps): Router {
   const router = Router();
@@ -111,17 +122,51 @@ export function placesRouter(deps: AppDeps): Router {
     res.status(201).json({ place });
   });
 
-  // TODO(m2): reviews list and create (pseudonymous, opt-in handle per review).
+  // Pseudonymous reviews. The handle is included only when that review opted in.
   router.get(
     '/:id/reviews',
+    optionalAuth(deps),
     validate({ params: idParams, query: paginationQuery }),
-    notImplemented,
+    async (req, res) => {
+      const { params, query } = getValidated<{
+        params: z.infer<typeof idParams>;
+        query: z.infer<typeof paginationQuery>;
+      }>(req);
+      const viewerId = req.auth?.user._id ?? null;
+      res.set('Cache-Control', viewerId ? 'private, no-store' : PUBLIC_CACHE);
+      res.json(await listReviews(params.id, query, viewerId));
+    },
   );
   router.post(
     '/:id/reviews',
     requireAuth(deps),
     validate({ params: idParams, body: reviewBody }),
-    notImplemented,
+    async (req, res) => {
+      const { params, body } = getValidated<{
+        params: z.infer<typeof idParams>;
+        body: z.infer<typeof reviewBody>;
+      }>(req);
+      res.status(201).json({ review: await createReview(params.id, currentUser(req)._id, body) });
+    },
+  );
+
+  // Anonymous check-ins. The body is an aggregate: counts and the latest month, never who.
+  router.get('/:id/check-ins', validate({ params: idParams }), async (req, res) => {
+    const { params } = getValidated<{ params: z.infer<typeof idParams> }>(req);
+    res.set('Cache-Control', PUBLIC_CACHE);
+    res.json(await getCheckInSummary(params.id));
+  });
+  router.post(
+    '/:id/check-ins',
+    requireAuth(deps),
+    validate({ params: idParams, body: checkInBody }),
+    async (req, res) => {
+      const { params, body } = getValidated<{
+        params: z.infer<typeof idParams>;
+        body: z.infer<typeof checkInBody>;
+      }>(req);
+      res.status(201).json(await createCheckIn(params.id, currentUser(req)._id, body));
+    },
   );
 
   return router;

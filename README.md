@@ -196,20 +196,23 @@ ecosystem.config.cjs  PM2 definition; secrets come from the env file on the host
 - Auth, tested end to end: register and login (argon2id), magic link issue (always `202`, so the endpoint cannot enumerate accounts) and verify, logout. Sign in with Apple and Google verify the provider token server-side and answer `503 provider_unconfigured` until their client ids are set.
 - Sessions: random 32-byte tokens returned once, stored as SHA-256 hashes, sliding 30-day expiry, list and revoke under `/api/me/sessions`.
 - Member record: `GET`, strict `PATCH`, and `DELETE /api/me` as a hard delete.
-- Places: list by bounding box (approved only) ranked fully vegan first, independents before chains, then reviews and name, with `veganLevel`, `types`, `includeChains` and `q` filters; `map-pins` for up to 1000 slim pins; get by slug; submit as `pending`; admin pending queue with approve and reject. Admin role is read from the database on every request.
+- Places: list by bounding box (approved only) ranked fully vegan first, independents before chains, then reviews and name, with `veganLevel`, `types`, `includeChains` and `q` filters; `map-pins` for up to 1000 slim pins; get by slug; submit as `pending`; admin pending queue with approve and reject. Admin role is read from the database on every request. A place also carries `checkInCount`, `latestCheckInMonth`, and `verification` (`verified` when an agreeing check-in is newer than 180 days, otherwise `unverified`).
+- Place lists: owner-only create, read, update, delete, and add or remove places under `/api/place-lists`. `isPublic` is stored for a later friends-sharing milestone and does not let anyone else read the list.
+- Place reviews: `GET` and `POST /api/places/:id/reviews` on an approved place. Text is public; the handle is included only when that review sets `showHandle`. One active review per member. Admins list and set status at `/api/admin/reviews`. `POST /api/reports` with `targetType: review` files a report; the reporter is the session and is not returned.
+- Check-ins: `POST /api/places/:id/check-ins` once per member per place per UTC month. `GET` returns `{ checkInCount, latestCheckInMonth, verification }` and nothing about who went.
 - Events: list from now on, soonest first, filtered by window, area, type and grove, with visibility decided per row on the server (public, grove members, the creator's friends) and the address hidden until RSVP when the organizer asks; detail with the host summary.
 - Organizations (verified first, admin ids never serialized), groves (counts only), media and guides (published only): public lists and detail.
 - Ingest: `POST /api/ingest/:resource` behind a constant-time key or an admin session, per-item validation, moderation defaults, admin edits preserved. See [Ingest](#ingest).
 - Companion: `POST /api/companion/chat` streams SSE (`meta`, `delta`, `done` or `error`) with a per-member rate limit; unpinned conversations carry a 24-hour TTL.
 - Wired but waiting on their routes: the `/messages` Socket.IO namespace (session auth, `user:` and `conversation:` rooms with membership checks), the presigned S3 upload service, the AES-256-GCM message cipher, and the reminder worker tick.
-- Fifteen vitest suites, including one that proves every remaining stub validates and answers `501` in the standard shape.
+- Vitest suites, including one that proves every remaining stub validates and answers `501` in the standard shape.
 
 ## Not yet
 
 Every route below exists, is mounted, validates its input, and answers `501 { error: { code: 'not_implemented' } }` with a `// TODO(m2)` comment beside it. Implement in place; do not add a parallel route.
 
-- Place reviews and place lists; event create, edit, RSVP and attendees; grove join and leave; friends and invites.
-- Feed, posts, reactions, comments, saves, a handle's public posts, reports.
+- Event create, edit, RSVP and attendees; grove join and leave; friends and invites.
+- Feed, posts, reactions, comments, saves, and a handle's public posts.
 - Upload presign and video create; conversations and messages over REST.
 - The private action log, push tokens, notification preferences.
 - Companion conversation list, pin, and delete; admin media and guide CRUD and the report queue; reminder delivery.
@@ -220,7 +223,7 @@ Every route below exists, is mounted, validates its input, and answers `501 { er
 - Visibility is filtered in the query, on the server, before anything leaves. Public place reads return approved rows only; a member sees their own sessions and nothing else's.
 - Logs carry request id, method, path, and status. The query string is dropped on purpose (a bounding box is a location), bodies are never serialized, and pino redacts authorization headers, cookies, passwords, emails, and tokens.
 - Session tokens are stored only as SHA-256 hashes, so a database read cannot be replayed as a login. Magic links are hashed the same way and expire in 15 minutes.
-- Account deletion removes the user, sessions, friendships, invites, RSVPs, grove memberships, posts, comments, reactions, saves, messages, conversations, action log, companion conversations, place lists, push tokens, and preferences in one pass; places, reviews, and reports the member submitted stay, detached.
+- Account deletion removes the user, sessions, friendships, invites, RSVPs, grove memberships, posts, comments, reactions, saves, messages, conversations, action log, companion conversations, place lists, push tokens, and preferences in one pass; places, reviews, check-ins, and reports the member submitted stay, detached. A detached review has `showHandle` forced off.
 - Direct messages are encrypted at rest with AES-256-GCM under a rotatable key id and expire after 90 days by default.
 
 The full promise, data inventory, and threat model: [docs.vegangrove.org/privacy](https://docs.vegangrove.org/privacy).

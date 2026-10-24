@@ -19,6 +19,7 @@ import { MessageModel } from './message.js';
 import { NotificationPreferencesModel } from './notificationPreferences.js';
 import { OrganizationModel } from './organization.js';
 import { PlaceModel } from './place.js';
+import { PlaceCheckInModel } from './placeCheckIn.js';
 import { PlaceListModel } from './placeList.js';
 import { PlaceReviewModel } from './placeReview.js';
 import { PostModel } from './post.js';
@@ -53,6 +54,7 @@ export * from './message.js';
 export * from './notificationPreferences.js';
 export * from './organization.js';
 export * from './place.js';
+export * from './placeCheckIn.js';
 export * from './placeList.js';
 export * from './placeReview.js';
 export * from './post.js';
@@ -88,6 +90,7 @@ export const allModels = [
   NotificationPreferencesModel,
   OrganizationModel,
   PlaceModel,
+  PlaceCheckInModel,
   PlaceListModel,
   PlaceReviewModel,
   PostModel,

@@ -3,6 +3,7 @@ import { type KeysetField, keysetFilter, keysetPage, keysetSort } from '../lib/k
 import { uniqueSlug } from '../lib/slug.js';
 import type { HomeArea, PlaceType, VeganLevel } from '../models/enums.js';
 import { type Place, type PlaceDoc, PlaceModel, type Types } from '../models/index.js';
+import { toCheckInSummary } from './checkIns.js';
 
 export const MAP_PINS_LIMIT = 1000;
 
@@ -37,7 +38,7 @@ export interface SubmitPlaceInput {
   photoKeys?: string[];
 }
 
-type PlaceRow = Place & { _id: Types.ObjectId };
+export type PlaceRow = Place & { _id: Types.ObjectId };
 
 /**
  * The public ranking: fully vegan first, independents before chains, then the
@@ -78,6 +79,7 @@ export function toPublicPlace(doc: PlaceRow | PlaceDoc) {
     lastSeenAt: p.lastSeenAt ?? null,
     ratingAvg: p.ratingAvg,
     reviewCount: p.reviewCount,
+    ...toCheckInSummary(p),
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };

@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stripJpegMetadata } from '../scripts/ingest/lib/jpeg.js';
 import {
+  ARCHIVE_COVER_USER_AGENT,
   attachCovers,
   coverFetchUrl,
   coverObjectKey,
+  coverRequestUserAgent,
+  coverRetryDelay,
   createPacer,
   docToMapped,
   downloadCover,
@@ -249,19 +252,29 @@ describe('Open Library covers', () => {
       { item: book('OL2W'), coverId: 66 },
       { item: book('OL3W') },
     ];
-    const items = await attachCovers(books, {
+    const { items, summary } = await attachCovers(books, {
       dryRun: false,
       store,
       pace: async () => {},
       warn: () => {},
       fetchImpl: async (url, init) => {
         fetches.push(url);
+        expect(init?.redirect).toBe('manual');
         expect(new Headers(init?.headers).get('user-agent')).toBe(OPEN_LIBRARY_USER_AGENT);
         return new Response(new Uint8Array(image), {
           status: 200,
           headers: { 'content-type': 'image/jpeg' },
         });
       },
+    });
+    expect(summary).toMatchObject({
+      uploaded: 1,
+      skippedExisting: 1,
+      noCover: 1,
+      failed: 0,
+      planned: 0,
+      skippedNoBucket: 0,
+      statuses: {},
     });
     expect(fetches).toEqual([coverFetchUrl(55)]);
     expect(puts).toHaveLength(1);
@@ -276,36 +289,310 @@ describe('Open Library covers', () => {
     expect(JSON.stringify(items)).not.toContain('covers.openlibrary.org');
 
     let touched = false;
-    const dry = await attachCovers([{ item: book('OL9W'), coverId: 1 }], {
-      dryRun: true,
-      store,
-      pace: async () => {
-        touched = true;
+    const { items: dry, summary: drySummary } = await attachCovers(
+      [{ item: book('OL9W'), coverId: 1 }],
+      {
+        dryRun: true,
+        store,
+        pace: async () => {
+          touched = true;
+        },
+        warn: () => {},
+        fetchImpl: async () => {
+          touched = true;
+          return new Response(null, { status: 500 });
+        },
       },
-      warn: () => {},
-      fetchImpl: async () => {
-        touched = true;
-        return new Response(null, { status: 500 });
-      },
-    });
+    );
     expect(touched).toBe(false);
     expect(dry[0]?.posterKey).toBe(coverObjectKey('OL9W'));
+    expect(drySummary.planned).toBe(1);
+    expect(drySummary.uploaded).toBe(0);
 
     const warnings: string[] = [];
-    const skipped = await attachCovers([{ item: book('OL8W'), coverId: 9 }], {
-      dryRun: false,
-      store: null,
-      pace: async () => {},
-      warn: (_obj, msg) => warnings.push(msg),
-      fetchImpl: async () => new Response(null, { status: 200 }),
-    });
+    const { items: skipped, summary: skippedSummary } = await attachCovers(
+      [{ item: book('OL8W'), coverId: 9 }],
+      {
+        dryRun: false,
+        store: null,
+        pace: async () => {},
+        warn: (_obj, msg) => warnings.push(msg),
+        fetchImpl: async () => new Response(null, { status: 200 }),
+      },
+    );
     expect(skipped[0]?.posterKey).toBeUndefined();
+    expect(skippedSummary.skippedNoBucket).toBe(1);
     expect(warnings).toEqual(['S3_MEDIA_BUCKET not set; covers skipped']);
 
-    const rejected = await downloadCover(
-      coverFetchUrl(1),
-      async () => new Response(new Uint8Array(Buffer.alloc(800, 1)), { status: 200 }),
+    let unusableCalls = 0;
+    const rejected = await downloadCover(coverFetchUrl(1), async () => {
+      unusableCalls += 1;
+      return new Response(new Uint8Array(Buffer.alloc(800, 1)), { status: 200 });
+    });
+    expect(unusableCalls).toBe(1);
+    expect(rejected).toEqual({ ok: false, reason: 'unusable', status: 200 });
+  });
+
+  it('sends the full agent to Open Library and a shorter honest one to archive.org', () => {
+    expect(coverRequestUserAgent(coverFetchUrl(55))).toBe(OPEN_LIBRARY_USER_AGENT);
+    expect(coverRequestUserAgent('https://archive.org/download/l_covers_0001/file.jpg')).toBe(
+      ARCHIVE_COVER_USER_AGENT,
     );
-    expect(rejected).toBeNull();
+    expect(
+      coverRequestUserAgent('https://ia803209.us.archive.org/view_archive.php?archive=/x&file=y'),
+    ).toBe(ARCHIVE_COVER_USER_AGENT);
+    expect(coverRequestUserAgent('https://archive.org.evil.test/view_archive.php')).toBe(
+      OPEN_LIBRARY_USER_AGENT,
+    );
+    expect(coverRequestUserAgent('https://notarchive.org/file.jpg')).toBe(OPEN_LIBRARY_USER_AGENT);
+    for (const agent of [OPEN_LIBRARY_USER_AGENT, ARCHIVE_COVER_USER_AGENT]) {
+      expect(agent).not.toMatch(/Mozilla|AppleWebKit|Chrome|Safari|Firefox/i);
+    }
+    expect(ARCHIVE_COVER_USER_AGENT.toLowerCase()).not.toContain('vega');
+    expect(OPEN_LIBRARY_USER_AGENT).toContain('vegangrove.org');
+  });
+
+  it('follows cover redirects and does not send the blocked agent to archive.org', async () => {
+    const image = jpegWithExif();
+    const download =
+      'https://archive.org/download/l_covers_0010/l_covers_0010_86.zip/0010864115-L.jpg';
+    const archive =
+      'https://ia803209.us.archive.org/view_archive.php?archive=/23/items/l_covers_0010/l_covers_0010_86.zip&file=0010864115-L.jpg';
+    const calls: Array<{ url: string; agent: string; redirect?: RequestInit['redirect'] }> = [];
+    let paces = 0;
+    const puts: Buffer[] = [];
+    const { items, summary } = await attachCovers([{ item: book('OL1W'), coverId: 10864115 }], {
+      dryRun: false,
+      store: {
+        async has() {
+          return false;
+        },
+        async put(_key, body) {
+          puts.push(body);
+        },
+      },
+      pace: async () => {
+        paces += 1;
+      },
+      warn: () => {},
+      fetchImpl: async (url, init) => {
+        const agent = new Headers(init?.headers).get('user-agent') ?? '';
+        calls.push({ url, agent, redirect: init?.redirect });
+        if (url === coverFetchUrl(10864115)) {
+          return new Response(null, { status: 302, headers: { location: download } });
+        }
+        if (url === download) {
+          return new Response(null, { status: 302, headers: { location: archive } });
+        }
+        if (url === archive) {
+          return new Response(new Uint8Array(image), { status: 200 });
+        }
+        throw new Error(`unexpected ${url}`);
+      },
+    });
+    expect(calls.map((call) => call.url)).toEqual([coverFetchUrl(10864115), download, archive]);
+    expect(calls[0]).toMatchObject({ agent: OPEN_LIBRARY_USER_AGENT, redirect: 'manual' });
+    expect(calls[1]).toMatchObject({ agent: ARCHIVE_COVER_USER_AGENT, redirect: 'manual' });
+    expect(calls[2]).toMatchObject({ agent: ARCHIVE_COVER_USER_AGENT, redirect: 'manual' });
+    expect(
+      calls.every(
+        (call) => !call.url.includes('archive.org') || !call.agent.toLowerCase().includes('vega'),
+      ),
+    ).toBe(true);
+    expect(paces).toBe(1);
+    expect(puts).toHaveLength(1);
+    expect(puts[0]?.includes(Buffer.from('Exif'))).toBe(false);
+    expect(items[0]?.posterKey).toBe(coverObjectKey('OL1W'));
+    expect(summary.uploaded).toBe(1);
+    expect(summary.failed).toBe(0);
+  });
+
+  it('does not follow a cover redirect off the cover hosts', async () => {
+    const calls: string[] = [];
+    const warnings: Array<Record<string, unknown>> = [];
+    const { items, summary } = await attachCovers([{ item: book('OL1W'), coverId: 4 }], {
+      dryRun: false,
+      store: {
+        async has() {
+          return false;
+        },
+        async put() {},
+      },
+      pace: async () => {},
+      warn: (obj) => warnings.push(obj),
+      fetchImpl: async (url) => {
+        calls.push(url);
+        return new Response('secret-body', {
+          status: 302,
+          headers: { location: 'https://archive.org.evil.test/cover.jpg' },
+        });
+      },
+    });
+    expect(calls).toEqual([coverFetchUrl(4)]);
+    expect(items[0]?.posterKey).toBeUndefined();
+    expect(summary.failed).toBe(1);
+    expect(summary.statuses).toEqual({ '302': 1 });
+    expect(warnings).toEqual([{ sourceId: 'OL1W', status: 302, reason: 'http' }]);
+    expect(JSON.stringify(warnings)).not.toContain('secret-body');
+  });
+
+  it('refetches with the archive.org agent when the redirect is opaque', async () => {
+    const image = jpegWithExif();
+    const calls: Array<{ redirect?: RequestInit['redirect']; agent: string }> = [];
+    const downloaded = await downloadCover(coverFetchUrl(7), async (_url, init) => {
+      calls.push({
+        redirect: init?.redirect,
+        agent: new Headers(init?.headers).get('user-agent') ?? '',
+      });
+      if (calls.length === 1) {
+        const hidden = new Response(null, {
+          status: 302,
+          headers: { location: 'https://archive.org/download/hidden' },
+        });
+        Object.defineProperty(hidden, 'type', { value: 'opaqueredirect' });
+        return hidden;
+      }
+      return new Response(new Uint8Array(image), { status: 200 });
+    });
+    expect(calls).toEqual([
+      { redirect: 'manual', agent: OPEN_LIBRARY_USER_AGENT },
+      { redirect: 'follow', agent: ARCHIVE_COVER_USER_AGENT },
+    ]);
+    expect(downloaded.ok).toBe(true);
+  });
+
+  it('retries a timeout and a 503, and does not retry HTTP 400', async () => {
+    const image = jpegWithExif();
+    const delays: number[] = [];
+    let timeouts = 0;
+    const recovered = await downloadCover(
+      coverFetchUrl(1),
+      async () => {
+        timeouts += 1;
+        if (timeouts === 1) {
+          const err = new Error('The operation was aborted due to timeout');
+          err.name = 'TimeoutError';
+          throw err;
+        }
+        return new Response(new Uint8Array(image), { status: 200 });
+      },
+      {
+        sleep: async (ms) => {
+          delays.push(ms);
+        },
+      },
+    );
+    expect(timeouts).toBe(2);
+    expect(delays).toEqual([1_000]);
+    expect(recovered.ok).toBe(true);
+
+    delays.length = 0;
+    let serverErrors = 0;
+    const after503 = await downloadCover(
+      coverFetchUrl(2),
+      async () => {
+        serverErrors += 1;
+        if (serverErrors === 1) {
+          return new Response(null, { status: 503, headers: { 'retry-after': '2' } });
+        }
+        return new Response(new Uint8Array(image), { status: 200 });
+      },
+      {
+        sleep: async (ms) => {
+          delays.push(ms);
+        },
+      },
+    );
+    expect(serverErrors).toBe(2);
+    expect(delays).toEqual([2_000]);
+    expect(after503.ok).toBe(true);
+
+    const warnings: Array<Record<string, unknown>> = [];
+    let rejected = 0;
+    const { summary } = await attachCovers([{ item: book('OL4W'), coverId: 4 }], {
+      dryRun: false,
+      store: {
+        async has() {
+          return false;
+        },
+        async put() {},
+      },
+      pace: async () => {},
+      sleep: async () => {
+        throw new Error('HTTP 400 must not be retried');
+      },
+      warn: (obj) => warnings.push(obj),
+      fetchImpl: async () => {
+        rejected += 1;
+        return new Response('secret-body', { status: 400 });
+      },
+    });
+    expect(rejected).toBe(1);
+    expect(summary.failed).toBe(1);
+    expect(summary.statuses).toEqual({ '400': 1 });
+    expect(summary.uploaded).toBe(0);
+    expect(warnings).toEqual([{ sourceId: 'OL4W', status: 400, reason: 'http' }]);
+    expect(JSON.stringify(warnings)).not.toContain('secret-body');
+  });
+
+  it('stops after three network failures and counts them once', async () => {
+    const delays: number[] = [];
+    let calls = 0;
+    const warnings: Array<Record<string, unknown>> = [];
+    const { items, summary } = await attachCovers([{ item: book('OL5W'), coverId: 5 }], {
+      dryRun: false,
+      store: {
+        async has() {
+          return false;
+        },
+        async put() {},
+      },
+      pace: async () => {},
+      sleep: async (ms) => {
+        delays.push(ms);
+      },
+      warn: (obj) => warnings.push(obj),
+      fetchImpl: async () => {
+        calls += 1;
+        throw new TypeError('fetch failed');
+      },
+    });
+    expect(calls).toBe(3);
+    expect(delays).toEqual([1_000, 2_000]);
+    expect(items[0]?.posterKey).toBeUndefined();
+    expect(summary.failed).toBe(1);
+    expect(summary.statuses).toEqual({ network: 1 });
+    expect(warnings).toEqual([{ sourceId: 'OL5W', reason: 'network' }]);
+  });
+
+  it('counts a storage error without the error message', async () => {
+    const warnings: Array<Record<string, unknown>> = [];
+    const { summary } = await attachCovers([{ item: book('OL6W'), coverId: 6 }], {
+      dryRun: false,
+      store: {
+        async has() {
+          throw new Error('bucket secret-name');
+        },
+        async put() {},
+      },
+      pace: async () => {},
+      warn: (obj) => warnings.push(obj),
+      fetchImpl: async () => {
+        throw new Error('should not fetch');
+      },
+    });
+    expect(summary.statuses).toEqual({ storage: 1 });
+    expect(warnings).toEqual([{ sourceId: 'OL6W', reason: 'storage', error: 'Error' }]);
+    expect(JSON.stringify(warnings)).not.toContain('secret-name');
+  });
+
+  it('caps cover retry delay', () => {
+    expect(coverRetryDelay(0, null)).toBe(1_000);
+    expect(coverRetryDelay(1, null)).toBe(2_000);
+    expect(coverRetryDelay(2, null)).toBe(4_000);
+    expect(coverRetryDelay(0, '2')).toBe(2_000);
+    expect(coverRetryDelay(0, '0.2')).toBe(1_000);
+    expect(coverRetryDelay(0, '120')).toBe(30_000);
+    expect(coverRetryDelay(0, 'not-a-number')).toBe(1_000);
   });
 });
